@@ -103,3 +103,12 @@ class Intersection:
 
         self.entries = {"r": [], "l": [], "u": [], "d": []}
         self.crossing = []
+
+    def crossable_first_glance(self, start_entry, target_entry):
+        # NOTE might change data structure for crossing might not just be tuples
+        return all(
+            [
+                car_route in no_conflicts[(start_entry, target_entry)]
+                for car_route in self.crossing
+            ]
+        )
