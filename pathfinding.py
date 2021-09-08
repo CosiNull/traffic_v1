@@ -1,5 +1,5 @@
 import random as rdn
-from settings import *
+import settings as stgs
 from typing import Tuple
 import math
 
@@ -18,7 +18,7 @@ def rand_graph_pos(graph, car_len):
     to = connection[0]
     # Choose start
     start = rdn.randint(
-        car_len + node_width, connection[1].length - node_width - car_len
+        car_len + stgs.node_width, connection[1].length - stgs.node_width - car_len
     )
 
     return (node, to, start)

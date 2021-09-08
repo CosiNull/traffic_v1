@@ -1,17 +1,18 @@
-from road_visuals import *
-from settings import *
-from cars import *
+import road_visuals as rv
+import settings as stgs
+import cars
 
 c = 0
 running = True
 while running:
-    pg.display.update()
-    background()
-    draw_graph()
-    draw_cars()
+    stgs.time += 1
+    rv.pg.display.update()
+    rv.background()
+    rv.draw_graph()
+    rv.draw_cars()
 
-    check_keys()
+    rv.check_keys()
 
     if c > 180:
-        update_cars()
+        rv.update_cars()
     c += 1

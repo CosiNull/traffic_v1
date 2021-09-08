@@ -102,6 +102,8 @@ class Intersection:
         self.y = y
 
         self.entries = {"r": [], "l": [], "u": [], "d": []}
+
+        # Data structure
         self.crossing = []
 
     def crossable_first_glance(self, start_entry, target_entry):

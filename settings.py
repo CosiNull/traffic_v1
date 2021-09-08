@@ -33,3 +33,7 @@ park_dist = 0
 
 # Useful info
 # Gas: 31__  Distance Traveled: 9.497076107027738__ Distance Road: 7.277826774108917
+
+
+# Time
+time = 0

@@ -1,13 +1,13 @@
-from settings import *
+import settings as stgs
 
 import math
 import random as rdn
 import copy as cpy
-from pathfinding import *
+import pathfinding as pf
 
 # Local settings
 rdn.seed(1)
-car_width = int((node_width / 2) * 0.5)
+car_width = int((stgs.node_width / 2) * 0.5)
 colors = [
     (255, 0, 0),
     (0, 100, 0),
@@ -23,7 +23,7 @@ class Car:
     # Inittializing
     def __init__(self, graph):
         self.state = 0
-        self.len = car_len
+        self.len = stgs.car_len
         self.width = car_width
 
         self.dead = False
@@ -43,7 +43,7 @@ class Car:
 
     def set_pos(self, graph, random=True):
         if random:
-            node, to, start = rand_graph_pos(graph, self.len)
+            node, to, start = pf.rand_graph_pos(graph, self.len)
         else:
             node, to = self.start_nodes
             if node[0] == to[0]:
@@ -59,7 +59,7 @@ class Car:
             start = abs(self.pos[unsame_indexes] - node[unsame_indexes])
 
         # Set Position
-        variation = node_width / 2 - self.width
+        variation = stgs.node_width / 2 - self.width
         variation += Parking_Lot.dist_from_road
 
         if node[0] == to[0]:  # Vertical (x are the same)
@@ -100,7 +100,7 @@ class Car:
         start = self.start_nodes[0]
         if self.angle == 0 or self.angle == math.pi:
             start = self.start_nodes[1]
-        start_dir = angle_to_dir[self.angle]
+        start_dir = pf.angle_to_dir[self.angle]
 
         # Graph
         graph = cpy.deepcopy(self.graph)
@@ -108,9 +108,9 @@ class Car:
         # graph.remove_edge(self.start_nodes[1], self.start_nodes[0])
 
         if func == "dj":
-            self.path = pathfind_dj(graph, start, goal, start_dir)[0]
+            self.path = pf.pathfind_dj(graph, start, goal, start_dir)[0]
         elif func == "as":
-            self.path = pathfind_as(graph, start, goal, start_dir)[0]
+            self.path = pf.pathfind_as(graph, start, goal, start_dir)[0]
         else:
             raise Exception("ERROR: Bad 'func' Parameter")
 
@@ -118,15 +118,19 @@ class Car:
         self.goal = 0
         if len(self.path) >= 2:
             u_s = 0 if self.path[-1][0] != self.path[-2][0] else 1
-            a = car_len + node_width
-            b = abs(self.path[-1][u_s] - self.path[-2][u_s]) - node_width - car_len
+            a = stgs.car_len + stgs.node_width
+            b = (
+                abs(self.path[-1][u_s] - self.path[-2][u_s])
+                - stgs.node_width
+                - stgs.car_len
+            )
         else:
             u_s = 0 if self.path[-1][0] != self.start_nodes[1][0] else 1
-            a = car_len + node_width
+            a = stgs.car_len + stgs.node_width
             b = (
                 abs(self.path[-1][u_s] - self.start_nodes[1][u_s])
-                - node_width
-                - car_len
+                - stgs.node_width
+                - stgs.car_len
             )
         if a > b:
             self.dead = True
@@ -139,9 +143,9 @@ class Car:
         def add_dir(path_list, index, abs_curr_dir):
             if index >= len(path_list) - 1:
                 return
-            dir = get_abs_direction(path_list[index], path_list[index + 1])
+            dir = pf.get_abs_direction(path_list[index], path_list[index + 1])
 
-            turn = relative_dir[abs_curr_dir][dir]
+            turn = pf.relative_dir[abs_curr_dir][dir]
 
             path_list.insert(index + 1, (turn))
             add_dir(path_list, index + 2, dir)
@@ -219,10 +223,10 @@ class Car:
 
         # Dont forget to include when there is a car in front to stop
         dist = (self.pos[unsame_indexes] + self.len / 2 * pos_angle) - (
-            self.path[0][unsame_indexes] - node_width / 2 * pos_angle
+            self.path[0][unsame_indexes] - stgs.node_width / 2 * pos_angle
         )
         if len(self.path) == 1:
-            dist += (park_dist + self.goal) * pos_angle
+            dist += (stgs.park_dist + self.goal) * pos_angle
         dist = abs(dist)
 
         if dist > 0:
@@ -264,7 +268,7 @@ class Car:
     # intersections
     def intersect_forward(self):
         # Distance: 24.0, Gas: 49
-        if self.turn_state < math.ceil((node_width + self.len) / self.speed):
+        if self.turn_state < math.ceil((stgs.node_width + self.len) / self.speed):
             self.move_forward(self.speed)
             self.turn_state += 1
         else:
@@ -334,8 +338,8 @@ class Car:
 
 # Parked
 class Parking_Lot:
-    min_park_dist = car_len * 0.3
-    dist_from_road = node_width / 2
+    min_park_dist = stgs.car_len * 0.3
+    dist_from_road = stgs.node_width / 2
 
     def __init__(self):
         self.data = {}
