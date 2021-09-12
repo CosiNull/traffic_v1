@@ -17,7 +17,7 @@ lights = {
     if len(road_network.connections[node]) > 2
 }
 """
-cars = [c.Car(road_network) for i in range(100)]
+cars = [c.Car(road_network) for i in range(150)]
 
 # Moving Functions
 def check_keys():
@@ -171,15 +171,22 @@ def draw_cars():
 
 def update_cars():
     for car in cars:
-        car.update()
-        if car.state == 0:
-            if car.path == None:
-                if car.park_time > 0:
-                    car.park_time -= 1
+        if car.color in c.colors:
+            car.update()
+            if car.state == 0:
+                if car.path == None:
+                    if car.park_time > 0:
+                        car.park_time -= 1
+                    else:
+                        goal = pf.rand_node(road_network)
+                        while (
+                            goal == car.start_nodes[0]
+                        ):  # The while exists to avoid a strange bug where the cars can't identify the road that it is in
+                            goal = pf.rand_node(road_network)
+                        car.find_path(goal)
+
                 else:
-                    car.find_path(pf.rand_node(road_network))
-            else:
-                car.enter_road()
+                    car.enter_road()
 
 
 # Initializing pygame_________________________________________________________
