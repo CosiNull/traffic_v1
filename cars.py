@@ -21,7 +21,8 @@ colors = [
 # Car data class
 class Car:
     # Inittializing
-    def __init__(self, graph):
+    def __init__(self, graph, ID):
+        self.id = ID
         self.state = 0
         self.len = stgs.car_len
         self.width = car_width
@@ -46,8 +47,10 @@ class Car:
         else:
 
             node, to = self.start_nodes
-            if node[0] == to[0]:
-                node, to = to, node
+
+            # But why?
+            # if node[0] == to[0]:
+            #    node, to = to, node
 
             # Setting up the start
             unsame_indexes = (
@@ -59,15 +62,17 @@ class Car:
         variation = stgs.node_width / 2 - self.width
         variation += Parking_Lot.dist_from_road
 
-        if node[0] == to[0]:  # Vertical (x are the same)
-            if node[1] < to[1]:
-                self.pos = (node[0] + variation, node[1] + start)
+        if node[0] == to[0]:
+            if node[1] > to[1]:  # Vertical (x are the same) (0,4)(0,5)
+                self.pos = (node[0] + variation, node[1] - start)
                 #
                 self.angle = math.pi * 3 / 2
+                # self.dead = True
             else:
-                self.pos = (node[0] - variation, node[1] - start)
+                self.pos = (node[0] - variation, node[1] + start)
                 #
                 self.angle = math.pi / 2
+                print(node, to)
         else:  # Horizontal (y are the same)
             if node[0] < to[0]:  # -->
                 self.pos = (node[0] + start, node[1] + variation)
@@ -83,11 +88,13 @@ class Car:
         self.road_angle = self.angle
 
         #
-        if not parking.can_park(self.start_nodes, self.pos, self.len):
-            self.set_pos(graph, True)
-            return
+        if not parking.can_park(self.start_nodes, self.pos, self.len, self.id):
+            # self.set_pos(graph, True)
+            print("Place Back")
+            # return
+            pass
 
-        parking.add_car(self.start_nodes, self.pos, self.len)
+        parking.add_car(self.start_nodes, self.pos, self.len, self.id)
 
         #
         self.init_pos = self.pos
@@ -103,9 +110,7 @@ class Car:
 
     def find_path(self, goal, func="dj"):
         # Set Start Pos
-        start = self.start_nodes[0]
-        if self.angle == 0 or self.angle == math.pi:
-            start = self.start_nodes[1]
+        start = self.start_nodes[1]
         start_dir = pf.angle_to_dir[self.angle]
 
         # Graph
@@ -121,30 +126,47 @@ class Car:
             raise Exception("ERROR: Bad 'func' Parameter")
 
         # Next step path itinerary NOTE
+        last_node = self.path[-1]
+        before_last_node = self.path[-2]
+
         self.goal = 0
-        if len(self.path) >= 2:
-            u_s = 0 if self.path[-1][0] != self.path[-2][0] else 1
-            a = stgs.car_len + stgs.node_width
-            b = (
-                abs(self.path[-1][u_s] - self.path[-2][u_s])
-                - stgs.node_width
-                - stgs.car_len
-            )
-        else:
-            u_s = 0 if self.path[-1][0] != self.start_nodes[1][0] else 1
-            a = stgs.car_len + stgs.node_width
-            b = (
-                abs(self.path[-1][u_s] - self.start_nodes[1][u_s])
-                - stgs.node_width
-                - stgs.car_len
-            )
+        if not len(self.path) >= 2:
+            raise Exception("Path too short")
+
+        u_s = 0 if last_node[0] != before_last_node[0] else 1
+        a = stgs.car_len + stgs.node_width + stgs.park_dist
+        b = (
+            abs(last_node[u_s] - before_last_node[u_s])
+            - stgs.node_width
+            - stgs.car_len
+            - stgs.park_dist
+        )
+
         if a > b:
             self.path = None
             return
         self.goal = rdn.randint(
-            a,
-            b,
+            math.ceil(a),
+            math.floor(b),
         )
+        self.predicted_nodes = (before_last_node, last_node)
+
+        # Parking reservation
+        # The 12 is kinda weird. my calculations are off by 12 by accuracy
+        pos_dir = 1 if self.angle == 0 or self.angle == math.pi / 2 else -1
+        edge = (before_last_node, last_node)
+        pos = list(last_node)
+
+        pos[u_s] -= self.goal * pos_dir
+
+        self.target_pos = tuple(pos)
+
+        if parking.can_park(edge, pos, self.len, self.id):
+            parking.add_car(edge, pos, self.len, self.id)
+        else:
+            self.path = None
+            # print("Spot already reserved in advance")
+            return
 
         def add_dir(path_list, index, abs_curr_dir):
             if index >= len(path_list) - 1:
@@ -202,12 +224,16 @@ class Car:
                 self.state = 2
             else:
                 # NOTE ADD CAR IN PARKING DATABASE
+
                 self.set_pos(self.graph, False)
+                print(
+                    f"\nPOS: {self.pos},\nTARGET_POS{self.target_pos},\nSTART_NODES {self.start_nodes},\nPREDICTED_NODES{self.predicted_nodes},\nGOAL: {self.goal}"
+                )
                 self.state = 0
                 self.path = None
                 self.park_time = 200
                 self.gas = 0
-                pass
+                # print(self.pos, self.angle)
 
     def move_to_dest(self):  # NOTE: UNFINISHED
         # Move Forward
@@ -229,23 +255,26 @@ class Car:
         pos_angle = 1 if self.angle == 0 or self.angle == math.pi / 2 else -1
 
         # Dont forget to include when there is a car in front to stop
-        dist = (self.pos[unsame_indexes] + self.len / 2 * pos_angle) - (
-            self.path[0][unsame_indexes] - stgs.node_width / 2 * pos_angle
+
+        # To understand the dist formula and not spend 2 minutes staring at it, Imagine that the car is going to the right
+        dist = (self.path[0][unsame_indexes] - stgs.node_width / 2 * pos_angle) - (
+            self.pos[unsame_indexes] + self.len / 2 * pos_angle
         )
-        if len(self.path) == 1:
-            dist += (stgs.park_dist + self.goal) * pos_angle
-
         dist = abs(dist)
+        if len(self.path) == 1:
+            dist -= self.goal + stgs.park_dist
 
-        if dist > 0:
-            if abs(dist) - self.speed <= 0:
-                self.turn_state = 0
-                self.move_forward(abs(self.speed - dist))
-                self.last_intersection = self.path.pop(0)
-                # Delete after
-                # self.save = (self.pos, self.gas)
-            else:
-                self.move_forward(self.speed)
+        if dist <= 0:
+            self.turn_state = 0
+            self.last_intersection = self.path.pop(0)
+        elif abs(dist) - self.speed <= 0:
+            self.turn_state = 0
+            self.move_forward(abs(self.speed - dist))
+            self.last_intersection = self.path.pop(0)
+            # Delete after
+            # self.save = (self.pos, self.gas)
+        else:
+            self.move_forward(self.speed)
         """
         else:
             # Dont forget to include when there is a car in front to stop
@@ -358,25 +387,30 @@ class Parking_Lot:
     def __getitem__(self, key):
         return self.data[key]
 
-    def can_park(self, edge, pos, car_length):
+    def can_park(self, edge, pos, car_length, ID):
         if not edge in self().keys():
             return True
         # Check collisions
         # horizontal or vertical
         coord_index = 0 if edge[0][1] == edge[1][1] else 1
 
+        # [0] pos [1] car_len [2] id
         for park in self()[edge]:
             dist = abs(park[0][coord_index] - pos[coord_index])
             min_dist = park[1] / 2 + car_length / 2 + self.min_park_dist
-            if dist < min_dist:
+
+            # if park[2] == ID and park[0] == pos:
+            #    print("YOOO")
+
+            if dist < min_dist and ID != park[2]:
                 return False
 
         return True
 
-    def add_car(self, edge, pos, car_length):
+    def add_car(self, edge, pos, car_length, ID):
         if not edge in self().keys():
             self.data[edge] = []
-        self.data[edge].append((pos, car_length))
+        self.data[edge].append((pos, car_length, ID))
 
     def delete_car(self, edge, pos):
         if edge in self().keys():

@@ -17,7 +17,7 @@ lights = {
     if len(road_network.connections[node]) > 2
 }
 """
-cars = [c.Car(road_network) for i in range(150)]
+cars = [c.Car(road_network, i) for i in range(150)]
 
 # Moving Functions
 def check_keys():
@@ -180,7 +180,7 @@ def update_cars():
                     else:
                         goal = pf.rand_node(road_network)
                         while (
-                            goal == car.start_nodes[0]
+                            goal == car.start_nodes[0] or goal == car.start_nodes[1]
                         ):  # The while exists to avoid a strange bug where the cars can't identify the road that it is in
                             goal = pf.rand_node(road_network)
                         car.find_path(goal)
