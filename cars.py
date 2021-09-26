@@ -152,8 +152,9 @@ class Car:
         self.predicted_nodes = (before_last_node, last_node)
 
         # Parking reservation
-        # The 12 is kinda weird. my calculations are off by 12 by accuracy
-        pos_dir = 1 if self.angle == 0 or self.angle == math.pi / 2 else -1
+        pos_dir = (
+            1 if self.predicted_nodes[1][u_s] > self.predicted_nodes[0][u_s] else -1
+        )
         edge = (before_last_node, last_node)
         pos = list(last_node)
 
