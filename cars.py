@@ -91,10 +91,8 @@ class Car:
 
         #
         if not parking.can_park(self.start_nodes, self.pos, self.len, self.id):
-            # self.set_pos(graph, True)
-            print("Place Back")
-            # return
-            pass
+            self.set_pos(graph, True)
+            return
 
         parking.add_car(self.start_nodes, self.pos, self.len, self.id)
 
@@ -174,7 +172,6 @@ class Car:
             parking.add_car(edge, pos, self.len, self.id)
         else:
             self.path = None
-            # print("Spot already reserved in advance")
             return
 
         def add_dir(path_list, index, abs_curr_dir):
