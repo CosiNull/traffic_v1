@@ -29,11 +29,11 @@ road_len = 52
 
 # Cars
 car_len = 8
-park_dist = 0
+park_dist = 9.89707610702726
 
 # Useful info
-# Gas: 31__  Distance Traveled: 9.497076107027738__ Distance Road: 7.277826774108917
-
+# Gas: 31__  Distance Traveled: 9.89707610702726__ Distance Road: 7.277826774108917
+road_center = 4
 
 # Time
 time = 0

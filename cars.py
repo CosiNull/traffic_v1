@@ -41,6 +41,8 @@ class Car:
         self.park_time = 0
         self.goal = 0
 
+        self.pause = False
+
     def set_pos(self, graph, random=True):
         if random:
             node, to, start = pf.rand_graph_pos(graph, self.len)
@@ -72,7 +74,7 @@ class Car:
                 self.pos = (node[0] - variation, node[1] + start)
                 #
                 self.angle = math.pi / 2
-                print(node, to)
+
         else:  # Horizontal (y are the same)
             if node[0] < to[0]:  # -->
                 self.pos = (node[0] + start, node[1] + variation)
@@ -134,15 +136,21 @@ class Car:
             raise Exception("Path too short")
 
         u_s = 0 if last_node[0] != before_last_node[0] else 1
-        a = stgs.car_len + stgs.node_width + stgs.park_dist
+        a = (
+            stgs.car_len / 2
+            + stgs.node_width / 2
+            + stgs.park_dist
+            + parking.min_park_dist
+        )
         b = (
             abs(last_node[u_s] - before_last_node[u_s])
-            - stgs.node_width
-            - stgs.car_len
+            - stgs.node_width / 2
+            - stgs.car_len / 2
             - stgs.park_dist
+            - parking.min_park_dist
         )
 
-        if a > b:
+        if a >= b:
             self.path = None
             return
         self.goal = rdn.randint(
@@ -183,6 +191,9 @@ class Car:
 
     # The Holy Update Method
     def update(self):
+        if self.pause:
+            return
+
         if self.state == 1:  # Exit parking
             self.park(exit=True)
             self.gas += 1
@@ -198,7 +209,7 @@ class Car:
     def park(self, exit=True):  # NOTE: Unfinished
 
         # NOTE: Gas: 31  Distance: 9.497076107027738
-        # horizontal = self.start_nodes[0][1] == self.start_nodes[1][1]
+        horizontal = self.start_nodes[0][1] == self.start_nodes[1][1]
         turn = self.turn_speed  # if horizontal else -self.turn_speed
         turn = turn if exit else -turn
 
@@ -223,17 +234,26 @@ class Car:
                 self.turn_state = 0
                 parking.delete_car(self.start_nodes, self.init_pos)
                 self.state = 2
+
+                self.center_to_road(False)
+
             else:
                 # NOTE ADD CAR IN PARKING DATABASE
 
                 self.set_pos(self.graph, False)
+                self.pos = (round(self.pos[0]), round(self.pos[1]))
+
+                """
                 print(
                     f"\nPOS: {self.pos},\nTARGET_POS{self.target_pos},\nSTART_NODES {self.start_nodes},\nPREDICTED_NODES{self.predicted_nodes},\nGOAL: {self.goal}"
                 )
+                """
+
                 self.state = 0
                 self.path = None
                 self.park_time = 200
                 self.gas = 0
+                self.goal = 0
                 # print(self.pos, self.angle)
 
     def move_to_dest(self):  # NOTE: UNFINISHED
@@ -253,48 +273,39 @@ class Car:
 
     def advance_to_dest(self):  # NOTE: UNFINISHED
         unsame_indexes = 0 if self.start_nodes[0][0] != self.start_nodes[1][0] else 1
-        pos_angle = 1 if self.angle == 0 or self.angle == math.pi / 2 else -1
+        pos_angle = (
+            1
+            if self.start_nodes[0][unsame_indexes] < self.start_nodes[1][unsame_indexes]
+            else -1
+        )
 
         # Dont forget to include when there is a car in front to stop
 
         # To understand the dist formula and not spend 2 minutes staring at it, Imagine that the car is going to the right
-        dist = (self.path[0][unsame_indexes] - stgs.node_width / 2 * pos_angle) - (
-            self.pos[unsame_indexes] + self.len / 2 * pos_angle
-        )
-        dist = abs(dist)
-        if len(self.path) == 1:
-            dist -= self.goal + stgs.park_dist
+        if not len(self.path) == 1:
+            dist = (
+                self.path[0][unsame_indexes]
+                - (stgs.node_width / 2 + self.len / 2) * pos_angle
+            ) - (self.pos[unsame_indexes])
+            dist = abs(dist)
+        else:
+            dist = (
+                self.path[0][unsame_indexes] - (self.goal + stgs.park_dist) * pos_angle
+            ) - (self.pos[unsame_indexes])
+            dist = abs(dist)
+            # dist -= self.goal
 
-        if dist <= 0:
+        if dist == 0:
             self.turn_state = 0
             self.last_intersection = self.path.pop(0)
-        elif abs(dist) - self.speed <= 0:
+
+        elif dist <= self.speed:
             self.turn_state = 0
-            self.move_forward(abs(self.speed - dist))
+            self.move_forward(dist)
             self.last_intersection = self.path.pop(0)
-            # Delete after
             # self.save = (self.pos, self.gas)
         else:
             self.move_forward(self.speed)
-        """
-        else:
-            # Dont forget to include when there is a car in front to stop
-            dist = (self.pos[unsame_indexes] - self.len / 2) - (
-                self.path[0][unsame_indexes] + node_width / 2
-            )
-            if len(self.path) == 1:
-                dist -= park_dist
-            if dist > 0:
-                if dist - self.speed <= 0:
-                    self.turn_state = 0
-                    self.move_forward(self.speed - dist)
-                    self.last_intersection = self.path.pop(0)
-
-                    # Delete after
-                    # self.save = (self.pos, self.gas)
-                else:
-                    self.move_forward(self.speed)
-        """
 
     # Movement
     def move_forward(self, speed):
@@ -303,6 +314,36 @@ class Car:
 
         self.pos = (self.pos[0] + mov_x, self.pos[1] + mov_y)
 
+    def center_to_road(self, intersection_cross=True):
+        u_s = 0 if self.start_nodes[0][0] != self.start_nodes[1][0] else 1
+        road_angle = 1 if self.start_nodes[0][u_s] < self.start_nodes[1][u_s] else -1
+
+        if u_s == 0:
+            x, y = self.pos
+            y = self.start_nodes[0][1]
+            y += stgs.road_center * road_angle
+
+            x = round(x)
+            if intersection_cross:
+                x = (
+                    round(self.start_nodes[0][0])
+                    + (stgs.node_width / 2 + self.len / 2) * road_angle
+                )
+            self.pos = (x, y)
+        else:
+            x, y = self.pos
+            x = self.start_nodes[0][0]
+            x -= stgs.road_center * road_angle
+
+            y = round(y)
+            if intersection_cross:
+                y = (
+                    round(self.start_nodes[0][1])
+                    + (stgs.node_width / 2 + self.len / 2) * road_angle
+                )
+
+            self.pos = (x, y)
+
     # intersections
     def intersect_forward(self):
         # Distance: 24.0, Gas: 49
@@ -310,9 +351,12 @@ class Car:
             self.move_forward(self.speed)
             self.turn_state += 1
         else:
+
             self.turn_state = 0
             self.path.pop(0)
             self.start_nodes = (self.last_intersection, self.path[0])
+
+            self.center_to_road()
 
     right_turn_deviation = 0.075
 
@@ -322,6 +366,7 @@ class Car:
             self.move_forward(self.speed)
             self.angle += self.right_turn_deviation
         else:
+
             self.angle = (self.road_angle + math.pi / 2) % (math.pi * 2)
             self.turn_state = 0
             self.path.pop(0)
@@ -334,6 +379,7 @@ class Car:
             #    print(
             #        f"Distance: {self.pos[0]-self.save[0][0]}, Gas: {self.gas-self.save[1]}"
             #    )
+            self.center_to_road()
 
     left_turn_deviation = 0.032
 
@@ -355,6 +401,7 @@ class Car:
             #    print(
             #        f"Distance: {self.pos[1]-self.save[0][1]}, Gas: {self.gas-self.save[1]}"
             #    )
+            self.center_to_road()
 
     @property
     def points(self):
