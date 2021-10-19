@@ -1,14 +1,12 @@
 # Settings
 import settings as stgs
-import pickle
 import cars as c
 import pathfinding as pf
+import pickle
+import traffic as trf
 
 drawing = False
 
-# Loading content and generating
-with open(stgs.road_file, "rb") as f:
-    road_network = pickle.load(f)
 
 """
 lights = {
@@ -17,7 +15,8 @@ lights = {
     if len(road_network.connections[node]) > 2
 }
 """
-cars = [c.Car(road_network, i) for i in range(150)]
+cars = [c.Car(trf.road_network, i) for i in range(150)]
+
 
 # Moving Functions
 def check_keys():
@@ -149,12 +148,12 @@ def draw_graph():
     def dfs(node=tuple[float, float]):
         if not node in visited:
             visited.add(node)
-            for neighbour in road_network.connections[node]:
+            for neighbour in trf.road_network.connections[node]:
                 draw_road(node, neighbour[0])
                 dfs(neighbour[0])
 
-    dfs(next(iter(road_network.nodes)))
-    [draw_node(x) for x in road_network.nodes]
+    dfs(next(iter(trf.road_network.nodes)))
+    [draw_node(x) for x in trf.road_network.nodes]
 
 
 # Cars_________________________________________________________________________
@@ -171,22 +170,21 @@ def draw_cars():
 
 def update_cars():
     for car in cars:
-        if car.color in c.colors:
-            car.update()
-            if car.state == 0:
-                if car.path == None:
-                    if car.park_time > 0:
-                        car.park_time -= 1
-                    else:
-                        goal = pf.rand_node(road_network)
-                        while (
-                            goal == car.start_nodes[0] or goal == car.start_nodes[1]
-                        ):  # The while exists to avoid a strange bug where the cars can't identify the road that it is in
-                            goal = pf.rand_node(road_network)
-                        car.find_path(goal)
-
+        if car.state == 0:
+            if car.path == None:
+                if car.park_time > 0:
+                    car.park_time -= 1
                 else:
-                    car.enter_road()
+                    goal = pf.rand_node(trf.road_network)
+                    while (
+                        goal == car.start_nodes[0] or goal == car.start_nodes[1]
+                    ):  # The while exists to avoid a strange bug where the cars can't identify the road that it is in
+                        goal = pf.rand_node(trf.road_network)
+                    car.find_path(goal)
+            else:
+                car.enter_road()
+        else:
+            car.update()
 
 
 # Initializing pygame_________________________________________________________
@@ -195,6 +193,7 @@ import pygame as pg
 pg.init()
 screen = pg.display.set_mode([stgs.width, stgs.height])
 pg.display.set_caption("Simulation")
+pg.event.set_allowed([pg.QUIT, pg.KEYDOWN, pg.KEYUP])
 
 """
 res1 = []

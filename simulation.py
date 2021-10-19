@@ -5,15 +5,12 @@ import cars
 running = True
 while running:
     stgs.time += 1
+
     rv.pg.display.update()
     rv.background()
     rv.draw_graph()
     rv.draw_cars()
-
     rv.check_keys()
 
     if stgs.time > 180:
         rv.update_cars()
-
-    if stgs.time % 180 == 0:
-        print(len(rv.cars))

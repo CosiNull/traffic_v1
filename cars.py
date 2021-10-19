@@ -2,8 +2,10 @@ import settings as stgs
 
 import math
 import random as rdn
-import copy as cpy
 import pathfinding as pf
+
+import traffic as trf
+
 
 # Local settings
 rdn.seed(1)
@@ -16,7 +18,6 @@ colors = [
     (255, 255, 0),
     (0, 255, 255),
 ]
-
 
 # Car data class
 class Car:
@@ -42,18 +43,13 @@ class Car:
         self.goal = 0
 
         self.pause = False
+        self.waiting_intersection = False
 
     def set_pos(self, graph, random=True):
         if random:
             node, to, start = pf.rand_graph_pos(graph, self.len)
         else:
-
             node, to = self.start_nodes
-
-            # But why?
-            # if node[0] == to[0]:
-            #    node, to = to, node
-
             # Setting up the start
             unsame_indexes = (
                 0 if self.start_nodes[0][0] != self.start_nodes[1][0] else 1
@@ -88,13 +84,14 @@ class Car:
 
         self.start_nodes = (node, to)
         self.road_angle = self.angle
+        self.pos = (round(self.pos[0]), round(self.pos[1]))
 
         #
         if not parking.can_park(self.start_nodes, self.pos, self.len, self.id):
             self.set_pos(graph, True)
             return
-
-        parking.add_car(self.start_nodes, self.pos, self.len, self.id)
+        if random:
+            parking.add_car(self.start_nodes, self.pos, self.len, self.id)
 
         #
         self.init_pos = self.pos
@@ -165,8 +162,16 @@ class Car:
         pos = list(last_node)
 
         pos[u_s] -= self.goal * pos_dir
+        s_i = 0 if u_s == 1 else 1
 
-        self.target_pos = tuple(pos)
+        if s_i == 1:
+            pos[s_i] += 12 * pos_dir
+        else:
+            pos[s_i] -= 12 * pos_dir
+
+        pos = tuple(pos)
+
+        self.target_pos = pos
 
         if parking.can_park(edge, pos, self.len, self.id):
             parking.add_car(edge, pos, self.len, self.id)
@@ -190,7 +195,6 @@ class Car:
     def update(self):
         if self.pause:
             return
-
         if self.state == 1:  # Exit parking
             self.park(exit=True)
             self.gas += 1
@@ -238,7 +242,6 @@ class Car:
                 # NOTE ADD CAR IN PARKING DATABASE
 
                 self.set_pos(self.graph, False)
-                self.pos = (round(self.pos[0]), round(self.pos[1]))
 
                 """
                 print(
@@ -261,6 +264,9 @@ class Car:
         elif not type(self.path[0]) == str:
             self.advance_to_dest()
         else:
+            if self.waiting_intersection:
+                self.wait_intersection()
+                return
             if self.path[0] == "u":
                 self.intersect_forward()
             elif self.path[0] == "r":
@@ -280,6 +286,11 @@ class Car:
 
         # To understand the dist formula and not spend 2 minutes staring at it, Imagine that the car is going to the right
         if not len(self.path) == 1:
+            cars_waiting = trf.junctions[self.path[0]].num_cars_entry(
+                trf.angle_to_intersect[self.angle]
+            )
+            # NOTE I AM HERE
+
             dist = (
                 self.path[0][unsame_indexes]
                 - (stgs.node_width / 2 + self.len / 2) * pos_angle
@@ -292,15 +303,18 @@ class Car:
             dist = abs(dist)
             # dist -= self.goal
 
-        if dist == 0:
+        if dist == 0 or dist <= self.speed:
             self.turn_state = 0
-            self.last_intersection = self.path.pop(0)
-
-        elif dist <= self.speed:
-            self.turn_state = 0
-            self.move_forward(dist)
+            if dist != 0:
+                self.move_forward(dist)
             self.last_intersection = self.path.pop(0)
             # self.save = (self.pos, self.gas)
+
+            if len(self.path) > 0:
+                self.junction_id = (self.id, trf.angle_to_intersect[self.angle])
+                self.waiting_intersection = True
+                trf.junctions[self.last_intersection].add_car(*self.junction_id)
+
         else:
             self.move_forward(self.speed)
 
@@ -341,19 +355,14 @@ class Car:
 
             self.pos = (x, y)
 
-    # intersections
+    # intersections______________________________________________________________
     def intersect_forward(self):
         # Distance: 24.0, Gas: 49
         if self.turn_state < math.ceil((stgs.node_width + self.len) / self.speed):
             self.move_forward(self.speed)
             self.turn_state += 1
         else:
-
-            self.turn_state = 0
-            self.path.pop(0)
-            self.start_nodes = (self.last_intersection, self.path[0])
-
-            self.center_to_road()
+            self.exit_intersection()
 
     right_turn_deviation = 0.075
 
@@ -365,18 +374,13 @@ class Car:
         else:
 
             self.angle = (self.road_angle + math.pi / 2) % (math.pi * 2)
-            self.turn_state = 0
-            self.path.pop(0)
-
-            self.start_nodes = (self.last_intersection, self.path[0])
-
             self.road_angle = self.angle
 
             # if self.road_angle == 0 or self.road_angle == math.pi:
             #    print(
             #        f"Distance: {self.pos[0]-self.save[0][0]}, Gas: {self.gas-self.save[1]}"
             #    )
-            self.center_to_road()
+            self.exit_intersection()
 
     left_turn_deviation = 0.032
 
@@ -387,18 +391,31 @@ class Car:
             self.angle -= self.left_turn_deviation
         else:
             self.angle = (self.road_angle - math.pi / 2) % (math.pi * 2)
-            self.turn_state = 0
-            self.path.pop(0)
-
-            self.start_nodes = (self.last_intersection, self.path[0])
-
             self.road_angle = self.angle
 
             # if self.road_angle == 0 or self.road_angle == math.pi:
             #    print(
             #        f"Distance: {self.pos[1]-self.save[0][1]}, Gas: {self.gas-self.save[1]}"
             #    )
-            self.center_to_road()
+            self.exit_intersection()
+
+    def wait_intersection(self):
+        if (
+            len(trf.junctions[self.last_intersection].crossing) == 0
+            and trf.junctions[self.last_intersection].queue_front[0] == self.id
+        ):
+            self.waiting_intersection = False
+            trf.junctions[self.last_intersection].remove_car(*self.junction_id)
+            trf.junctions[self.last_intersection].crossing.append(self.junction_id)
+        return
+
+    def exit_intersection(self):
+        self.turn_state = 0
+        self.path.pop(0)
+        self.start_nodes = (self.last_intersection, self.path[0])
+        self.center_to_road()
+
+        trf.junctions[self.last_intersection].crossing.remove(self.junction_id)
 
     @property
     def points(self):
@@ -444,13 +461,41 @@ class Parking_Lot:
             dist = abs(park[0][coord_index] - pos[coord_index])
             min_dist = park[1] / 2 + car_length / 2 + self.min_park_dist
 
-            # if park[2] == ID and park[0] == pos:
-            #    print("YOOO")
+            """
+            if park[2] == ID:
+                print("ok...")
+                print(pos, park[0])
+                if park[0] == pos:
+                    print("YOOO")
+            """
 
             if dist < min_dist and ID != park[2]:
                 return False
 
         return True
+
+    """
+    def is_cars_spot(self, edge, pos, car_length, ID):
+        if not edge in self().keys():
+            return False
+        # Check collisions
+        # horizontal or vertical
+        coord_index = 0 if edge[0][1] == edge[1][1] else 1
+
+        # [0] pos [1] car_len [2] id
+        for park in self()[edge]:
+            if ID == park[2]:
+                dist = abs(park[0][coord_index] - pos[coord_index])
+                min_dist = park[1] / 2 + car_length / 2 + self.min_park_dist
+
+                # if park[2] == ID and park[0] == pos:
+                #    print("YOOO")
+
+                if dist < min_dist:
+                    return True
+
+        return False
+    """
 
     def add_car(self, edge, pos, car_length, ID):
         if not edge in self().keys():

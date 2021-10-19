@@ -1,3 +1,8 @@
+from typing import Tuple
+import settings as stgs
+import pickle
+import math
+
 # System |Initial Char: From| Second Char: To|
 # Not including same direction turns because it might create a collision with the speed difference
 no_conflicts = {
@@ -97,15 +102,25 @@ no_conflicts = {
 
 
 class Intersection:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-        self.entries = {"r": [], "l": [], "u": [], "d": []}
+    def __init__(self, entries):
+        self.entries = {entry: [] for entry in entries}  # Car
+        self.queue = []  # Car
 
         # Data structure
         self.crossing = []
 
+    def add_car(self, ID, entry):
+        self.queue.append((ID, entry))
+        self.entries[entry].append(ID)
+
+    def remove_car(self, ID, entry):
+        self.queue.remove((ID, entry))
+        self.entries[entry].remove(ID)
+
+    def num_cars_entry(self, entry):
+        return len(self.entries[entry])
+
+    """
     def crossable_first_glance(self, start_entry, target_entry):
         # NOTE might change data structure for crossing might not just be tuples
         return all(
@@ -114,3 +129,39 @@ class Intersection:
                 for car_route in self.crossing
             ]
         )
+    """
+
+    @property
+    def queue_front(self):
+        return self.queue[0]
+
+
+def entry_dir(start_node: Tuple[float, float], end_node: Tuple[float, float]):
+    if start_node[0] == end_node[0]:  # Vertical
+        if start_node[1] < end_node[1]:
+            return "d"
+        else:
+            return "u"
+    elif start_node[1] == end_node[1]:  # Horizontal
+        if start_node[0] < end_node[0]:
+            return "r"
+        else:
+            return "l"
+    raise Exception("ERROR: UNVALID SET OF TUPLE PARAMETERS")
+
+
+def make_intersections_dict(graph):
+    return {
+        node: Intersection(
+            [entry_dir(node, connection[0]) for connection in graph.connections[node]]
+        )
+        for node in graph.nodes
+    }
+
+
+angle_to_intersect = {0: "l", math.pi / 2: "u", math.pi: "r", math.pi * 3 / 2: "d"}
+
+# Loading content and generating
+with open(stgs.road_file, "rb") as f:
+    road_network = pickle.load(f)
+junctions = make_intersections_dict(road_network)
