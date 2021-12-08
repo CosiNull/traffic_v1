@@ -236,12 +236,13 @@ class Car:
                 self.turn_state = 0
                 parking.delete_car(self.start_nodes, self.init_pos)
                 self.state = 2
-
                 self.center_to_road(False)
 
-            else:
-                # NOTE ADD CAR IN PARKING DATABASE
+                # Add to road dict
+                my_dir = trf.entry_dir(*self.start_nodes)
+                trf.roads[(self.start_nodes[0], my_dir)].add_car(self, sort=True)
 
+            else:
                 self.set_pos(self.graph, False)
 
                 """
@@ -256,6 +257,11 @@ class Car:
                 self.gas = 0
                 self.goal = 0
                 # print(self.pos, self.angle)
+
+                # Remove the car from the road
+                my_dir = pf.angle_to_dir[self.angle]
+                intersection_from = self.start_nodes[0]
+                trf.roads[(intersection_from, my_dir)].remove_car(self)
 
     def move_to_dest(self):  # NOTE: UNFINISHED
         # Move Forward
@@ -427,6 +433,14 @@ class Car:
             self.waiting_intersection = False
             junction_data.remove_car(*self.junction_id)
             junction_data.crossing.append(self.junction_id)
+
+            # Remove the car from the road
+            my_dir = pf.angle_to_dir[self.angle]
+            intersection_from = self.start_nodes[0]
+            trf.roads[(intersection_from, my_dir)].remove_car(
+                self
+            )  # Do pop when time comes
+
         elif self.intersection_line:
             # Calculate the target distance
             cars_waiting = trf.junctions[self.last_intersection].entries[
@@ -473,6 +487,11 @@ class Car:
         self.center_to_road()
 
         trf.junctions[self.last_intersection].crossing.remove(self.junction_id)
+
+        # Add to road data structure
+        my_dir = pf.angle_to_dir[self.angle]
+        intersection_from = self.start_nodes[0]
+        trf.roads[(intersection_from, my_dir)].add_car(self)
 
     @property
     def points(self):

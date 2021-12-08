@@ -182,11 +182,34 @@ class Road:
         self.cars = []
         self.max_capacity = self.calc_max_capacity(node1, node2)
 
+        self.start = node1
+        self.to = node2
+
     def calc_max_capacity(self, node1, node2):
         u_s = 0 if node1[0] != node2[0] else 1
         length = abs(node1[u_s] - node2[u_s])
 
         return int(length / (stgs.car_len + stgs.car_len * 0.3))
+
+    def add_car(self, car_instance, sort=False):
+        self.cars.append(car_instance)
+
+        if sort:  # Sort by dist from goal
+            self.cars.sort(key=lambda car: self.get_car_dist(car))
+
+    def get_car_dist(self, car):
+        ind = 0 if self.start[0] != self.to[0] else 1
+        return abs(self.to[ind] - car.pos[ind])
+
+    def pop_car(self, car):
+        popped = self.cars.pop(0)
+        if popped != car:
+            raise Exception(
+                "Oh no, it removed the wrong car"
+            )  # For debugging purposes for now
+
+    def remove_car(self, car):
+        self.cars.remove(car)
 
 
 def make_roads_dict(road_network):
