@@ -102,7 +102,7 @@ class Car:
             raise Exception("ERROR: Car cannot exit parking that it already exited")
 
             # print(self.goal)
-        self.state = 1
+        self.state = 0.5
         self.gas = 0
         self.turn_state = 0
 
@@ -196,7 +196,11 @@ class Car:
     def update(self):
         if self.pause:
             return
-        if self.state == 1:  # Exit parking
+        if self.state == 0.5:
+            my_dir = trf.entry_dir(*self.start_nodes)
+            if trf.roads[(self.start_nodes[0], my_dir)].can_out_parking(self):
+                self.state = 1
+        elif self.state == 1:  # Exit parking
             self.park(exit=True)
             self.gas += 1
         elif self.state == 2:  # Moving to destination
@@ -241,9 +245,6 @@ class Car:
                 # Add to road dict
                 my_dir = trf.entry_dir(*self.start_nodes)
                 trf.roads[(self.start_nodes[0], my_dir)].add_car(self, sort=True)
-
-                if self.angle == 0:
-                    print(self.init_pos, self.pos)
 
             else:
                 self.set_pos(self.graph, False)
@@ -461,7 +462,7 @@ class Car:
             # Remove the car from the road
             my_dir = pf.angle_to_dir[self.angle]
             intersection_from = self.start_nodes[0]
-            trf.roads[(intersection_from, my_dir)].remove_car(
+            trf.roads[(intersection_from, my_dir)].pop_car(
                 self
             )  # Do pop when time comes
         """"

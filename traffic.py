@@ -216,11 +216,29 @@ class Road:
         return self.cars.index(car)
 
     # Collision detection
-    def car_dist(self, car1, car2):
+    def car_dist(self, car1, car2):  # Can be optimized but the code is beautiful so...
         dist1 = self.get_car_dist(car1)
         dist2 = self.get_car_dist(car2)
 
         return abs(dist1 - dist2)
+
+    def can_out_parking(self, my_car):
+        my_dist = self.get_car_dist(my_car)
+
+        for car in self.cars:
+            car_dist = self.get_car_dist(car)
+            # check if it is in correct interval
+            if (
+                car_dist <= my_dist
+                and abs(car_dist - my_dist) < 10 + car.len / 2 + my_car.len / 2
+            ):
+                return False
+            elif (
+                car_dist > my_dist
+                and abs(car_dist - my_dist) < (car.len / 2 + my_car.len / 2) * 1.5
+            ):
+                return False
+        return True
 
 
 def make_roads_dict(road_network):
