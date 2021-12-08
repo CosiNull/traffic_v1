@@ -35,7 +35,7 @@ class Car:
         self.graph = graph
 
         self.color = colors[rdn.randint(0, len(colors) - 1)]
-        self.speed = 0.5
+        self.speed = stgs.car_speed
         self.park_speed = 0.4
 
         self.path = None
@@ -242,6 +242,9 @@ class Car:
                 my_dir = trf.entry_dir(*self.start_nodes)
                 trf.roads[(self.start_nodes[0], my_dir)].add_car(self, sort=True)
 
+                if self.angle == 0:
+                    print(self.init_pos, self.pos)
+
             else:
                 self.set_pos(self.graph, False)
 
@@ -294,17 +297,21 @@ class Car:
         # To understand the dist formula and not spend 2 minutes staring at it, Imagine that the car is going to the right
         car_line = 0
         if not len(self.path) == 1:
+            """
             cars_waiting = trf.junctions[self.path[0]].num_cars_entry(
                 trf.angle_to_intersect[self.angle]
             )
             car_line = cars_waiting * (stgs.car_len + parking.min_park_dist)
+            """
 
             dist = (
                 self.path[0][unsame_indexes]
                 - (stgs.node_width / 2 + self.len / 2) * pos_angle
             ) - (self.pos[unsame_indexes])
             dist = abs(dist)
+            """
             dist -= car_line
+            """
 
             # NOTE ADD LIMIT HERE
         else:
@@ -322,7 +329,9 @@ class Car:
             # self.save = (self.pos, self.gas)
             self.last_intersection = self.path.pop(0)
 
-            self.intersection_line = car_line != 0
+            """
+            self.intersection_line = False
+            """
 
             if len(self.path) > 1:
                 # self.last_intersection = self.path[0]
@@ -339,7 +348,22 @@ class Car:
                 pass
 
         else:
-            self.move_forward(self.speed)
+            my_dir = pf.angle_to_dir[self.angle]
+            intersection_from = self.start_nodes[0]
+            current_road = trf.roads[(intersection_from, my_dir)]
+            car_index = current_road.index_car(self)
+
+            dont_move = False
+            if car_index > 0:
+                car1 = current_road.cars[car_index]
+                car2 = current_road.cars[car_index - 1]
+                dont_move = (
+                    current_road.car_dist(car1, car2)
+                    < (car1.len / 2 + car2.len / 2) + parking.min_park_dist
+                )
+
+            if not dont_move:
+                self.move_forward(self.speed)
 
     # Movement
     def move_forward(self, speed):
@@ -425,8 +449,8 @@ class Car:
     def wait_intersection(self):
         junction_data = trf.junctions[self.last_intersection]
         if (
-            not self.intersection_line
-            and len(junction_data.crossing) == 0  # Crossing
+            # not self.intersection_line
+            len(junction_data.crossing) == 0  # Crossing
             and junction_data.queue_front[0] == self.id
         ):
             # self.path.pop(0)
@@ -440,7 +464,7 @@ class Car:
             trf.roads[(intersection_from, my_dir)].remove_car(
                 self
             )  # Do pop when time comes
-
+        """"
         elif self.intersection_line:
             # Calculate the target distance
             cars_waiting = trf.junctions[self.last_intersection].entries[
@@ -477,8 +501,9 @@ class Car:
 
             # Make it advance to it
             # If at the front of the queue not in line anymore
-
+        
         return
+        """
 
     def exit_intersection(self):
         self.turn_state = 0

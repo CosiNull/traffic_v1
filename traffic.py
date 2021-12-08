@@ -191,6 +191,7 @@ class Road:
 
         return int(length / (stgs.car_len + stgs.car_len * 0.3))
 
+    # Controlling the datastructure
     def add_car(self, car_instance, sort=False):
         self.cars.append(car_instance)
 
@@ -210,6 +211,16 @@ class Road:
 
     def remove_car(self, car):
         self.cars.remove(car)
+
+    def index_car(self, car):
+        return self.cars.index(car)
+
+    # Collision detection
+    def car_dist(self, car1, car2):
+        dist1 = self.get_car_dist(car1)
+        dist2 = self.get_car_dist(car2)
+
+        return abs(dist1 - dist2)
 
 
 def make_roads_dict(road_network):
