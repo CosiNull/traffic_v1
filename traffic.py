@@ -109,9 +109,11 @@ class Intersection:
         # Data structure
         self.crossing = []
 
-    def add_car(self, ID, entry):
-        self.queue.append((ID, entry))
+    def add_car_entry(self, ID, entry):
         self.entries[entry].append(ID)
+
+    def add_car_queue(self, ID, entry):
+        self.queue.append((ID, entry))
 
     def remove_car(self, ID, entry):
         self.queue.remove((ID, entry))
@@ -150,6 +152,18 @@ def entry_dir(start_node: Tuple[float, float], end_node: Tuple[float, float]):
     raise Exception("ERROR: UNVALID SET OF TUPLE PARAMETERS")
 
 
+inverse_dir = {"d": "u", "u": "d", "r": "l", "l": "r"}
+
+
+def intersection_dist(intersection, pos, angle):
+    if angle == math.pi or angle == 0:
+        u_s = 0
+    elif angle == math.pi / 2 or math.pi * 3 / 2:
+        u_s = 1
+
+    return abs(intersection[u_s] - pos[u_s])
+
+
 def make_intersections_dict(graph):
     return {
         node: Intersection(
@@ -161,7 +175,43 @@ def make_intersections_dict(graph):
 
 angle_to_intersect = {0: "l", math.pi / 2: "u", math.pi: "r", math.pi * 3 / 2: "d"}
 
+
+# Class road
+class Road:
+    def __init__(self, node1, node2):
+        self.cars = []
+        self.max_capacity = self.calc_max_capacity(node1, node2)
+
+    def calc_max_capacity(self, node1, node2):
+        u_s = 0 if node1[0] != node2[0] else 1
+        length = abs(node1[u_s] - node2[u_s])
+
+        return int(length / (stgs.car_len + stgs.car_len * 0.3))
+
+
+def make_roads_dict(road_network):
+    node = next(iter(road_network.nodes))
+    vis = set()
+    res = dict()
+
+    def dfs(graph, vis_node):
+        for neighbour in graph.connections[vis_node]:
+            if not (vis_node, neighbour[0]) in vis:
+                vis.add((vis_node, neighbour[0]))
+                road_dir = entry_dir(vis_node, neighbour[0])
+                res[vis_node, road_dir] = Road(vis_node, neighbour[0])
+                # print(vis_node, neighbour[0])
+                dfs(graph, neighbour[0])
+
+    dfs(road_network, node)
+
+    return res
+
+
 # Loading content and generating
 with open(stgs.road_file, "rb") as f:
     road_network = pickle.load(f)
 junctions = make_intersections_dict(road_network)
+roads = make_roads_dict(road_network)
+
+print(roads)
