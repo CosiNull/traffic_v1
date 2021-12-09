@@ -293,10 +293,10 @@ class Car:
             else -1
         )
 
-        # Dont forget to include when there is a car in front to stop
-
         # To understand the dist formula and not spend 2 minutes staring at it, Imagine that the car is going to the right
+        """
         car_line = 0
+        """
         if not len(self.path) == 1:
             """
             cars_waiting = trf.junctions[self.path[0]].num_cars_entry(
@@ -322,7 +322,7 @@ class Car:
             dist = abs(dist)
             # dist -= self.goal
 
-        if dist == 0 or dist <= self.speed:
+        if dist <= self.speed:
             self.turn_state = 0
             if dist != 0:
                 self.move_forward(dist)
@@ -337,13 +337,16 @@ class Car:
             if len(self.path) > 1:
                 # self.last_intersection = self.path[0]
                 self.junction_id = (self.id, trf.angle_to_intersect[self.angle])
-                self.waiting_intersection = True
-                trf.junctions[self.last_intersection].add_car_entry(*self.junction_id)
 
-                if not car_line:
+                if not self.waiting_intersection:
+                    self.waiting_intersection = True
+                    trf.junctions[self.last_intersection].add_car_entry(
+                        *self.junction_id
+                    )
                     trf.junctions[self.last_intersection].add_car_queue(
                         *self.junction_id
                     )
+
             else:
                 # Special parking case
                 pass
@@ -365,6 +368,27 @@ class Car:
 
             if not dont_move:
                 self.move_forward(self.speed)
+            else:
+                if (
+                    len(self.path) > 1
+                    and not self.waiting_intersection
+                    and current_road.cars[car_index - 1].waiting_intersection
+                ):
+                    self.junction_id = (self.id, trf.angle_to_intersect[self.angle])
+                    self.last_intersection = self.path[
+                        0
+                    ]  # It is called last intersection even though it didnt reach it next
+                    self.waiting_intersection = True
+                    trf.junctions[self.last_intersection].add_car_entry(
+                        *self.junction_id
+                    )
+                    trf.junctions[self.last_intersection].add_car_queue(
+                        *self.junction_id
+                    )
+                    if len(trf.junctions[self.last_intersection].queue) > 6:
+                        print(
+                            "it works", len(trf.junctions[self.last_intersection].queue)
+                        )
 
     # Movement
     def move_forward(self, speed):
@@ -454,7 +478,6 @@ class Car:
             len(junction_data.crossing) == 0  # Crossing
             and junction_data.queue_front[0] == self.id
         ):
-            # self.path.pop(0)
             self.waiting_intersection = False
             junction_data.remove_car(*self.junction_id)
             junction_data.crossing.append(self.junction_id)
