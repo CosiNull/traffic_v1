@@ -476,13 +476,21 @@ class Car:
 
     def wait_intersection(self):
         junction_data = trf.junctions[self.last_intersection]
+
         if (
             # not self.intersection_line
             len(junction_data.crossing) == 0  # Crossing
             and junction_data.queue_front[0] == self.id
         ):
-            # Check if next road is full
-            # NOTE I am here
+            # Go code the stuff that calculates if the next road is full here
+            # NOTE YOU ARE HERE
+            start_dir = pf.angle_to_dir[self.angle]
+            next_dir = trf.abs_dir(start_dir, self.path[0])
+            if trf.roads[(self.last_intersection, next_dir)].is_full():
+                car = junction_data.queue.pop(0)
+                i = junction_data.get_index_car_first_entry()
+                junction_data.queue.insert(i, car)
+                return
 
             # Remove from junction data structure
             self.waiting_intersection = False

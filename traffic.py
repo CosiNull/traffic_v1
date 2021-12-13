@@ -113,7 +113,20 @@ class Intersection:
         self.entries[entry].append(ID)
 
     def add_car_queue(self, ID, entry):
-        self.queue.append((ID, entry))
+        if self.entries[entry][0] == ID:
+            ind = self.get_index_car_first_entry()
+            self.queue.insert(ind, (ID, entry))
+        else:
+            self.queue.append((ID, entry))
+
+    def get_index_car_first_entry(self):
+        i = 0
+        for ID, entry in self.queue:
+            if len(self.entries[entry]) > 0 and self.entries[entry][0] == ID:
+                i += 1
+            else:
+                break
+        return i
 
     def remove_car(self, ID, entry):
         self.queue.remove((ID, entry))
@@ -187,9 +200,12 @@ class Road:
 
     def calc_max_capacity(self, node1, node2):
         u_s = 0 if node1[0] != node2[0] else 1
-        length = abs(node1[u_s] - node2[u_s])
+        length = abs(node1[u_s] - node2[u_s]) - stgs.node_width
 
-        return int(length / (stgs.car_len + stgs.car_len * 0.3))
+        return int(length / (stgs.car_len + stgs.car_len * 0.28))
+
+    def is_full(self):
+        return len(self.cars) >= self.max_capacity
 
     # Controlling the datastructure
     def add_car(self, car_instance, sort=False):
@@ -260,15 +276,15 @@ def make_roads_dict(road_network):
     return res
 
 
-""""
 def abs_dir(current_dir, turn):
     dir_dict = {
         "u": {"u": "u", "r": "r", "l": "l"},
         "r": {"u": "r", "r": "d", "l": "u"},
-        "l": {"u": "l", "r"},
+        "l": {"u": "l", "r": "u", "l": "d"},
+        "d": {"u": "d", "r": "l", "l": "r"},
     }
-    return
-"""
+    return dir_dict[current_dir][turn]
+
 
 # Loading content and generating
 with open(stgs.road_file, "rb") as f:
