@@ -198,6 +198,7 @@ def manhattan_dist(start, end):
     return (start[0] - end[0]) + (start[1] - end[1])
 
 
+"""
 def a_star(graph, start=tuple[float, float], end=tuple[float, float], start_dir=str):
     dist = {node: math.inf for node in graph.nodes}
     prev = {}
@@ -210,6 +211,7 @@ def a_star(graph, start=tuple[float, float], end=tuple[float, float], start_dir=
         node = pq.poll()[0]
         if node == end:
             break
+
         for neighbour, edge in graph.connections[node]:
             if neighbour in prev and prev[node] == neighbour:
                 continue
@@ -218,6 +220,52 @@ def a_star(graph, start=tuple[float, float], end=tuple[float, float], start_dir=
             ):
                 continue
             current_dist = dist[node] + edge.length
+            if current_dist < dist[neighbour]:
+                dist[neighbour] = current_dist
+                pq.insert((neighbour, current_dist + manhattan_dist(neighbour, end)))
+                prev[neighbour] = node
+
+    return (dist, prev)
+"""
+
+
+def a_star(graph, start=tuple[float, float], end=tuple[float, float], start_dir=str):
+    dist = {node: math.inf for node in graph.nodes}
+    vis = set()
+    prev = {}
+
+    dist[start] = 0
+    pq = Priority_Queue()
+    pq.insert((start, 0))
+
+    while len(pq()) > 0:
+        data = pq.poll()
+        node = data[0]
+        dest_dist = data[1]
+
+        if node == end:
+            break
+        elif node in vis:
+            continue
+
+        vis.add(node)
+
+        for connection in graph.connections[node]:
+
+            neighbour = connection[0]
+
+            if neighbour in prev and prev[node] == neighbour:
+                # print(node, prev[node], neighbour)
+                continue
+            elif len(vis) == 1 and opposite_dir[start_dir] == get_abs_direction(
+                node, neighbour
+            ):
+                continue
+
+            if neighbour in vis:
+                continue
+
+            current_dist = dest_dist + connection[1].length
             if current_dist < dist[neighbour]:
                 dist[neighbour] = current_dist
                 pq.insert((neighbour, current_dist + manhattan_dist(neighbour, end)))

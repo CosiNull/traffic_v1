@@ -109,7 +109,7 @@ class Car:
         self.gas = 0
         self.turn_state = 0
 
-    def find_path(self, goal, func="dj"):
+    def find_path(self, goal, func="as"):
         # Set Start Pos
         start = self.start_nodes[1]
         start_dir = pf.angle_to_dir[self.angle]
@@ -186,12 +186,15 @@ class Car:
         def add_dir(path_list, index, abs_curr_dir):
             if index >= len(path_list) - 1:
                 return
-            dir = pf.get_abs_direction(path_list[index], path_list[index + 1])
+            direc = pf.get_abs_direction(path_list[index], path_list[index + 1])
 
-            turn = pf.relative_dir[abs_curr_dir][dir]
+            try:
+                turn = pf.relative_dir[abs_curr_dir][direc]
+            except:
+                raise Exception(abs_curr_dir, direc)
 
             path_list.insert(index + 1, (turn))
-            add_dir(path_list, index + 2, dir)
+            add_dir(path_list, index + 2, direc)
 
         add_dir(self.path, 0, start_dir)
 

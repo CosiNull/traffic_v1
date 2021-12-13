@@ -260,6 +260,16 @@ def make_roads_dict(road_network):
     return res
 
 
+""""
+def abs_dir(current_dir, turn):
+    dir_dict = {
+        "u": {"u": "u", "r": "r", "l": "l"},
+        "r": {"u": "r", "r": "d", "l": "u"},
+        "l": {"u": "l", "r"},
+    }
+    return
+"""
+
 # Loading content and generating
 with open(stgs.road_file, "rb") as f:
     road_network = pickle.load(f)
