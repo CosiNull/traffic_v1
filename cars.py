@@ -341,15 +341,13 @@ class Car:
             """
 
             if len(self.path) > 1:
-                # self.last_intersection = self.path[0]
-                self.junction_id = (self.id, trf.angle_to_intersect[self.angle])
+                from_inter = trf.angle_to_intersect[self.angle]
+                self.junction_id = (self.id, from_inter)
+                self.road_to = trf.abs_dir(trf.inverse_dir[from_inter], self.path[0])
 
                 if not self.waiting_intersection:
                     self.waiting_intersection = True
                     trf.junctions[self.last_intersection].add_car_entry(
-                        *self.junction_id
-                    )
-                    trf.junctions[self.last_intersection].add_car_queue(
                         *self.junction_id
                     )
 
@@ -374,6 +372,7 @@ class Car:
 
             if not dont_move:
                 self.move_forward(self.speed)
+            """
             else:
                 # Not necessary for now but it is good to keep
                 if (
@@ -381,7 +380,7 @@ class Car:
                     and not self.waiting_intersection
                     and current_road.cars[car_index - 1].waiting_intersection
                 ):
-                    self.junction_id = (self.id, trf.angle_to_intersect[self.angle])
+
                     self.last_intersection = self.path[
                         0
                     ]  # It is called last intersection even though it didnt reach it next
@@ -392,6 +391,7 @@ class Car:
                     trf.junctions[self.last_intersection].add_car_queue(
                         *self.junction_id
                     )
+            """
 
     # Movement
     def move_forward(self, speed):
@@ -476,26 +476,29 @@ class Car:
 
     def wait_intersection(self):
         junction_data = trf.junctions[self.last_intersection]
+        start_dir = pf.angle_to_dir[self.angle]
+        start_inter = trf.inverse_dir[start_dir]
+        next_dir = trf.abs_dir(start_dir, self.path[0])
 
+        # Go check who is where
+        crossable = all(
+            [
+                (start, to) in trf.no_conflicts[(start_inter, next_dir)]
+                for ID, start, to in junction_data.crossing
+            ]
+        )
         if (
-            # not self.intersection_line
-            len(junction_data.crossing) == 0  # Crossing
-            and junction_data.queue_front[0] == self.id
+            crossable  # Crossing
+            and not trf.roads[(self.last_intersection, next_dir)].is_full()
+            # and junction_data.queue_front[0] == self.id
         ):
-            # Go code the stuff that calculates if the next road is full here
-            # NOTE YOU ARE HERE
-            start_dir = pf.angle_to_dir[self.angle]
-            next_dir = trf.abs_dir(start_dir, self.path[0])
-            if trf.roads[(self.last_intersection, next_dir)].is_full():
-                car = junction_data.queue.pop(0)
-                i = junction_data.get_index_car_first_entry()
-                junction_data.queue.insert(i, car)
-                return
 
             # Remove from junction data structure
             self.waiting_intersection = False
             junction_data.remove_car(*self.junction_id)
-            junction_data.crossing.append(self.junction_id)
+            junction_data.crossing.append(
+                (self.junction_id[0], self.junction_id[1], self.road_to)
+            )
 
             # Remove the car from the road
             my_dir = pf.angle_to_dir[self.angle]
@@ -549,7 +552,9 @@ class Car:
         self.start_nodes = (self.last_intersection, self.path[0])
         self.center_to_road()
 
-        trf.junctions[self.last_intersection].crossing.remove(self.junction_id)
+        trf.junctions[self.last_intersection].crossing.remove(
+            (self.junction_id[0], self.junction_id[1], self.road_to)
+        )
 
         # Add to road data structure
         my_dir = pf.angle_to_dir[self.angle]

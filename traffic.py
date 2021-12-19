@@ -12,6 +12,7 @@ no_conflicts = {
         ("d", "r"),
         ("r", "u"),
         ("u", "d"),
+        ("u", "l"),
     },  # From Up go straight
     ("u", "l"): {
         ("d", "r"),
@@ -19,22 +20,22 @@ no_conflicts = {
         ("r", "u"),
         ("r", "d"),
         ("l", "r"),
-        ("l", "u"),
+        ("l", "u"),  # Consider taking out?
         ("l", "d"),
         ("u", "l"),
     },  # From Up turn right
     ("u", "r"): {
-        ("d", "l"),
-        ("r", "u"),
         ("l", "d"),
+        ("r", "u"),  # Consider taking out?
         ("u", "r"),
     },  # From Up turn left
     # __________________________ RIGHT
     ("r", "l"): {
         ("l", "r"),
         ("l", "d"),
-        ("u", "r"),
+        ("d", "r"),
         ("r", "l"),
+        ("r", "d"),
     },  # From down go straight
     ("r", "u"): {
         ("d", "r"),
@@ -42,13 +43,12 @@ no_conflicts = {
         ("l", "r"),
         ("l", "d"),
         ("u", "l"),
-        ("u", "r"),
+        ("u", "r"),  # Consider taking out?
         ("u", "d"),
         ("r", "u"),
     },  # From down turn right
     ("r", "d"): {
-        ("d", "r"),
-        ("l", "u"),
+        ("d", "r"),  # Consider taking out?
         ("u", "l"),
         ("r", "d"),
     },  # From right turn left
@@ -58,20 +58,19 @@ no_conflicts = {
         ("u", "l"),
         ("l", "d"),
         ("d", "u"),
+        ("d", "r"),
     },  # From down go straight
     ("d", "r"): {
-        ("u", "l"),
         ("u", "d"),
         ("l", "u"),
         ("l", "d"),
         ("r", "u"),
         ("r", "l"),
-        ("r", "d"),
+        ("r", "d"),  # Consider taking out?
         ("d", "r"),
     },  # From down move right
     ("d", "l"): {
-        ("u", "r"),
-        ("l", "d"),
+        ("l", "d"),  # Consider taking out?
         ("r", "u"),
         ("d", "l"),
     },
@@ -79,28 +78,27 @@ no_conflicts = {
     ("l", "r"): {
         ("r", "l"),
         ("r", "u"),
-        ("d", "l"),
+        ("u", "l"),
         ("l", "r"),
+        ("l", "d"),
     },  # From down go straight
     ("l", "d"): {
         ("u", "l"),
         ("u", "r"),
         ("u", "l"),
-        ("r", "u"),
         ("d", "r"),
-        ("d", "l"),
+        ("d", "l"),  # Consider taking out?
         ("d", "u"),
         ("l", "d"),
     },  # From down turn right
     ("l", "u"): {
-        ("u", "l"),
-        ("r", "d"),
+        ("u", "l"),  # Consider taking out?
         ("d", "r"),
         ("l", "u"),
     },  # From right turn left
 }
 
-
+# NOTE MIGHT NEED TO REWRITE THIS PART
 class Intersection:
     def __init__(self, entries):
         self.entries = {entry: [] for entry in entries}  # Car
@@ -112,12 +110,14 @@ class Intersection:
     def add_car_entry(self, ID, entry):
         self.entries[entry].append(ID)
 
+    """
     def add_car_queue(self, ID, entry):
         if self.entries[entry][0] == ID:
             ind = self.get_index_car_first_entry()
             self.queue.insert(ind, (ID, entry))
         else:
             self.queue.append((ID, entry))
+    """
 
     def get_index_car_first_entry(self):
         i = 0
@@ -129,8 +129,19 @@ class Intersection:
         return i
 
     def remove_car(self, ID, entry):
-        self.queue.remove((ID, entry))
+        # self.queue.remove((ID, entry))
         self.entries[entry].remove(ID)
+
+        # Bypass the others in line
+        """
+        if len(self.entries[entry]) >= 1:
+            ind = self.get_index_car_first_entry()
+            q_index = self.queue.index((self.entries[entry][0], entry))
+
+            if q_index > 4:
+                self.queue.pop(q_index)
+                self.queue.insert(ind, (self.entries[entry][0], entry))
+        """
 
     def num_cars_entry(self, entry):
         return len(self.entries[entry])
@@ -291,5 +302,3 @@ with open(stgs.road_file, "rb") as f:
     road_network = pickle.load(f)
 junctions = make_intersections_dict(road_network)
 roads = make_roads_dict(road_network)
-
-print(roads)
