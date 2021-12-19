@@ -71,7 +71,7 @@ class Street(Road):
     def __init__(self, x, y, angle):
         super().__init__(x, y, angle)
 
-    probability = {"c": 0.73, "b": 0.1, "b2": 0.02, "s": 0.01, "t": 0.1, "t2": 0.03}
+    probability = {"c": 0.70, "b": 0.11, "b2": 0.04, "s": 0.01, "t": 0.1, "t2": 0.03}
 
 
 # Hot spots
@@ -89,7 +89,7 @@ class Highway(Road):
         self.inaccuracy = math.radians(0)
 
     probability = {
-        "c": 0.84,
+        "c": 0.82,
         "b": 0.1,
         "b2": 0.38,
         "t2": 0.02,

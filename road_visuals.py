@@ -15,7 +15,7 @@ lights = {
     if len(road_network.connections[node]) > 2
 }
 """
-cars = [c.Car(trf.road_network, i) for i in range(250)]
+cars = [c.Car(trf.road_network, i) for i in range(300)]
 
 
 # Moving Functions

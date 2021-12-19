@@ -42,7 +42,7 @@ segments = 0
 max_segments = 225
 road_queue = []
 hotspots = []
-random.seed(203040506070)  # 2409
+random.seed(2190)  # 2409
 
 
 # Helper Functions

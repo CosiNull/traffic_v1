@@ -8,7 +8,7 @@ import traffic as trf
 
 
 # Local settings
-rdn.seed(1)
+rdn.seed(2)
 car_width = int((stgs.node_width / 2) * 0.5)
 colors = [
     (255, 0, 0),
@@ -505,6 +505,11 @@ class Car:
             intersection_from = self.start_nodes[0]
             trf.roads[(intersection_from, my_dir)].pop_car(self)
 
+            # Add it to other one
+            new_dir = trf.abs_dir(pf.angle_to_dir[self.angle], self.path[0])
+            intersection_from = self.start_nodes[1]
+            trf.roads[(intersection_from, new_dir)].add_car(self)
+
         """"
         elif self.intersection_line:
             # Calculate the target distance
@@ -555,11 +560,6 @@ class Car:
         trf.junctions[self.last_intersection].crossing.remove(
             (self.junction_id[0], self.junction_id[1], self.road_to)
         )
-
-        # Add to road data structure
-        my_dir = pf.angle_to_dir[self.angle]
-        intersection_from = self.start_nodes[0]
-        trf.roads[(intersection_from, my_dir)].add_car(self)
 
     @property
     def points(self):
