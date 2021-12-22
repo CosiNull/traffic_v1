@@ -114,11 +114,6 @@ class Car:
         start = self.start_nodes[1]
         start_dir = pf.angle_to_dir[self.angle]
 
-        # Graph
-        # graph = cpy.deepcopy(self.graph)
-        # record first direction and to ban u-turns
-        # graph.remove_edge(self.start_nodes[1], self.start_nodes[0])
-
         if func == "dj":
             self.path = pf.pathfind_dj(self.graph, start, goal, start_dir)[0]
         elif func == "as":

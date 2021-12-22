@@ -204,12 +204,13 @@ angle_to_intersect = {0: "l", math.pi / 2: "u", math.pi: "r", math.pi * 3 / 2: "
 class Road:
     def __init__(self, node1, node2):
         self.cars = []
-        self.max_capacity = self.calc_max_capacity(node1, node2)
+        self.max_capacity = Road.max_capacity(node1, node2)
 
         self.start = node1
         self.to = node2
 
-    def calc_max_capacity(self, node1, node2):
+    @staticmethod
+    def max_capacity(node1, node2):
         u_s = 0 if node1[0] != node2[0] else 1
         length = abs(node1[u_s] - node2[u_s]) - stgs.node_width
 
@@ -262,7 +263,7 @@ class Road:
                 return False
             elif (
                 car_dist > my_dist
-                and abs(car_dist - my_dist) < (car.len / 2 + my_car.len / 2) * 1.5
+                and abs(car_dist - my_dist) < (car.len / 2 + my_car.len / 2) * 1.6
             ):
                 return False
         return True
