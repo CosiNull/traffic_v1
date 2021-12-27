@@ -1,5 +1,6 @@
 import settings as stgs
 import traffic as trf
+import pathfinding as pf
 import math
 
 relative_dir = {
@@ -231,4 +232,106 @@ def make_road_dict(road_network):
 
 junctions = make_intersection_dict(trf.road_network)
 roads = make_road_dict(trf.road_network)
-# __________________________________________________________________________
+# Path predicting__________________________________________________________________________
+# Simple
+def predict_path(car):
+    current_dirs = ["" for i in range(stgs.num_car)]
+    current_dirs[car.id] = pf.angle_to_dir[car.angle]
+
+    pred = predict_road_entry(current_dirs[car.id], car)
+    add_car_path(*pred)
+
+    # In future, no use for loop
+    for count, action in enumerate(car.path[0:-1]):
+        if not type(action) == str:
+            pred = predict_intersection(
+                action,
+                paths[car.id][count][0],
+                current_dirs[car.id],
+                timing_paths[car.id][count],
+                car,
+            )
+            add_car_path(*pred)
+
+        else:
+            pred = predict_turn(
+                paths[car.id][count][2],
+                trf.inverse_dir[current_dirs[car.id]],
+                action,
+                timing_paths[car.id][count],
+                car,
+            )
+            current_dirs[car.id] = trf.abs_dir(current_dirs[car.id], action)
+            add_car_path(*pred)
+
+
+def predict_road_entry(curr_dir, car):
+    # Still need to adjust that
+    start_time = stgs.time
+    # Exit parking code
+    u_s = 0 if curr_dir == "l" or curr_dir == "r" else 1
+    road_angle = 1 if curr_dir == "d" or curr_dir == "r" else -1
+
+    next_pos = list(car.init_pos)
+    next_pos[u_s] = round(next_pos[u_s] + stgs.park_dist * road_angle)
+
+    s_s = 1 if u_s == 0 else 0
+    road_ang_s = 1 if curr_dir == "r" or curr_dir == "u" else -1
+
+    # Use of start nodes here NOT GOOD FOR NOW
+    next_pos[s_s] = car.init_nodes[1][s_s] + stgs.road_center * road_ang_s
+
+    next_pos = tuple(next_pos)
+
+    time_delay = 2
+    time_finish = start_time + stgs.park_time + time_delay
+
+    return (car.id, next_pos, "e", time_finish, car.init_nodes[1])
+
+
+def predict_intersection(
+    intersection,
+    pos,
+    curr_dir,
+    time,
+    car,
+):
+    # If road is empty
+    u_s = 0 if curr_dir == "r" or curr_dir == "l" else 1
+    road_ang_u = 1 if curr_dir == "l" or curr_dir == "u" else -1
+
+    dist_to_travel = (
+        abs(intersection[u_s] - pos[u_s]) - stgs.node_width / 2 - stgs.car_len / 2
+    )
+    time_arrive = Road.estimate_arrive(time, dist_to_travel)
+
+    s_s = 1 if u_s == 0 else 0
+    road_ang_s = 1 if curr_dir == "r" or curr_dir == "u" else -1
+
+    next_pos = list(pos)
+    next_pos[u_s] = (
+        intersection[u_s] + (stgs.node_width / 2 + stgs.car_len / 2) * road_ang_u
+    )
+    next_pos[s_s] = intersection[s_s] + stgs.road_center * road_ang_s
+
+    return (car.id, tuple(next_pos), "i", time_arrive, intersection)
+
+
+def predict_turn(intersection, entry, turn, time, car):
+    # If it is free
+    extra_time = time_turn[turn]
+    wait_delay = 1
+    time_arrive = time + extra_time + wait_delay
+
+    new_dir = trf.abs_dir(trf.inverse_dir[entry], turn)
+    u_s = 0 if new_dir == "r" or new_dir == "l" else 1
+    road_ang_u = 1 if new_dir == "r" or new_dir == "d" else -1
+
+    s_s = 1 if u_s == 0 else 0
+    road_ang_s = 1 if new_dir == "r" or new_dir == "u" else -1
+
+    pos = list(intersection)
+    pos[s_s] = intersection[s_s] + stgs.road_center * road_ang_s
+    pos[u_s] = intersection[u_s] + (stgs.node_width / 2 + stgs.car_len / 2) * road_ang_u
+
+    return (car.id, tuple(pos), turn, time_arrive, intersection)

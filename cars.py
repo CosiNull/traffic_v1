@@ -101,6 +101,7 @@ class Car:
 
         #
         self.init_pos = self.pos
+        self.init_nodes = self.start_nodes
 
     def enter_road(self):
         if not self.state == 0:
@@ -199,94 +200,7 @@ class Car:
 
     # Future predicting_________________________________________________________________________
     def predict_path(self):
-        current_dir = pf.angle_to_dir[self.angle]
-        self.predict_road_entry(current_dir)
-
-        for count, action in enumerate(self.path[0:-1]):
-            if not type(action) == str:
-                self.predict_intersection(
-                    action,
-                    fut.paths[self.id][count][0],
-                    current_dir,
-                    fut.timing_paths[self.id][count],
-                )
-            else:
-                self.predict_turn(
-                    fut.paths[self.id][count][2],
-                    trf.inverse_dir[current_dir],
-                    action,
-                    fut.timing_paths[self.id][count],
-                )
-                current_dir = trf.abs_dir(current_dir, action)
-
-    def predict_road_entry(self, curr_dir):
-        # Still need to adjust that
-        start_time = stgs.time
-        # Exit parking code
-        u_s = 0 if curr_dir == "l" or curr_dir == "r" else 1
-        road_angle = 1 if curr_dir == "d" or curr_dir == "r" else -1
-
-        next_pos = list(self.init_pos)
-        next_pos[u_s] = round(next_pos[u_s] + stgs.park_dist * road_angle)
-
-        s_s = 1 if u_s == 0 else 0
-        road_ang_s = 1 if curr_dir == "r" or curr_dir == "u" else -1
-        next_pos[s_s] = self.start_nodes[1][s_s] + stgs.road_center * road_ang_s
-
-        next_pos = tuple(next_pos)
-
-        time_delay = 2
-        time_finish = start_time + stgs.park_time + time_delay
-
-        fut.add_car_path(self.id, next_pos, "e", time_finish, self.start_nodes[1])
-
-    def predict_intersection(
-        self,
-        intersection,
-        pos,
-        curr_dir,
-        time,
-    ):
-        # If road is empty
-        u_s = 0 if curr_dir == "r" or curr_dir == "l" else 1
-        road_ang_u = 1 if curr_dir == "l" or curr_dir == "u" else -1
-
-        dist_to_travel = (
-            abs(intersection[u_s] - pos[u_s]) - stgs.node_width / 2 - stgs.car_len / 2
-        )
-        time_arrive = fut.Road.estimate_arrive(time, dist_to_travel)
-
-        s_s = 1 if u_s == 0 else 0
-        road_ang_s = 1 if curr_dir == "r" or curr_dir == "u" else -1
-
-        next_pos = list(pos)
-        next_pos[u_s] = (
-            intersection[u_s] + (stgs.node_width / 2 + stgs.car_len / 2) * road_ang_u
-        )
-        next_pos[s_s] = intersection[s_s] + stgs.road_center * road_ang_s
-
-        fut.add_car_path(self.id, tuple(next_pos), "i", time_arrive, intersection)
-
-    def predict_turn(self, intersection, entry, turn, time):
-        # If it is free
-        extra_time = fut.time_turn[turn]
-        wait_delay = 1
-        time_arrive = time + extra_time + wait_delay
-
-        new_dir = trf.abs_dir(trf.inverse_dir[entry], turn)
-        u_s = 0 if new_dir == "r" or new_dir == "l" else 1
-        road_ang_u = 1 if new_dir == "r" or new_dir == "d" else -1
-
-        s_s = 1 if u_s == 0 else 0
-        road_ang_s = 1 if new_dir == "r" or new_dir == "u" else -1
-
-        pos = list(intersection)
-        pos[s_s] = intersection[s_s] + stgs.road_center * road_ang_s
-        pos[u_s] = (
-            intersection[u_s] + (stgs.node_width / 2 + stgs.car_len / 2) * road_ang_u
-        )
-
-        fut.add_car_path(self.id, tuple(pos), turn, time_arrive, intersection)
+        fut.predict_path(self)
 
     # The Holy Update Method_____________________________________________________________
     def update(self):
@@ -346,6 +260,9 @@ class Car:
                 # Add to road dict
                 my_dir = trf.entry_dir(*self.start_nodes)
                 trf.roads[(self.start_nodes[0], my_dir)].add_car(self, sort=True)
+
+                # print(fut.timing_paths[0][0], stgs.time)
+                # print(fut.paths[0][0], self.pos)
 
             else:
                 self.set_pos(trf.road_network, False)
