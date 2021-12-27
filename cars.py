@@ -1,8 +1,10 @@
+from os import curdir
 import settings as stgs
 
 import math
 import random as rdn
 import pathfinding as pf
+import future as fut
 
 import traffic as trf
 
@@ -22,10 +24,10 @@ colors = [
     (255, 140, 0),
 ]
 
-# Car data class
+# Car__________________________________________________________________________________________________________
 class Car:
     # Inittializing
-    def __init__(self, graph, ID):
+    def __init__(self, ID, autonomous=False):
         self.id = ID
         self.state = 0
         self.len = stgs.car_len
@@ -33,9 +35,7 @@ class Car:
 
         self.dead = False
 
-        self.set_pos(graph)
-
-        self.graph = graph
+        self.set_pos(trf.road_network)
 
         self.color = colors[rdn.randint(0, len(colors) - 1)]
         self.speed = stgs.car_speed
@@ -48,6 +48,8 @@ class Car:
         self.pause = False
         self.waiting_intersection = False
         self.intersection_line = False
+
+        self.autonomous = autonomous
 
     def set_pos(self, graph, random=True):
         if random:
@@ -115,9 +117,9 @@ class Car:
         start_dir = pf.angle_to_dir[self.angle]
 
         if func == "dj":
-            self.path = pf.pathfind_dj(self.graph, start, goal, start_dir)[0]
+            self.path = pf.pathfind_dj(trf.road_network, start, goal, start_dir)[0]
         elif func == "as":
-            self.path = pf.pathfind_as(self.graph, start, goal, start_dir)[0]
+            self.path = pf.pathfind_as(trf.road_network, start, goal, start_dir)[0]
         else:
             raise Exception("ERROR: Bad 'func' Parameter")
 
@@ -193,7 +195,100 @@ class Car:
 
         add_dir(self.path, 0, start_dir)
 
-    # The Holy Update Method
+        self.predict_path()
+
+    # Future predicting_________________________________________________________________________
+    def predict_path(self):
+        current_dir = pf.angle_to_dir[self.angle]
+        self.predict_road_entry(current_dir)
+
+        for count, action in enumerate(self.path[0:-1]):
+            if not type(action) == str:
+                self.predict_intersection(
+                    action,
+                    fut.paths[self.id][count][0],
+                    current_dir,
+                    fut.timing_paths[self.id][count],
+                )
+            else:
+                self.predict_turn(
+                    fut.paths[self.id][count][2],
+                    trf.inverse_dir[current_dir],
+                    action,
+                    fut.timing_paths[self.id][count],
+                )
+                current_dir = trf.abs_dir(current_dir, action)
+
+    def predict_road_entry(self, curr_dir):
+        # Still need to adjust that
+        start_time = stgs.time
+        # Exit parking code
+        u_s = 0 if curr_dir == "l" or curr_dir == "r" else 1
+        road_angle = 1 if curr_dir == "d" or curr_dir == "r" else -1
+
+        next_pos = list(self.init_pos)
+        next_pos[u_s] = round(next_pos[u_s] + stgs.park_dist * road_angle)
+
+        s_s = 1 if u_s == 0 else 0
+        road_ang_s = 1 if curr_dir == "r" or curr_dir == "u" else -1
+        next_pos[s_s] = self.start_nodes[1][s_s] + stgs.road_center * road_ang_s
+
+        next_pos = tuple(next_pos)
+
+        time_delay = 2
+        time_finish = start_time + stgs.park_time + time_delay
+
+        fut.add_car_path(self.id, next_pos, "e", time_finish, self.start_nodes[1])
+
+    def predict_intersection(
+        self,
+        intersection,
+        pos,
+        curr_dir,
+        time,
+    ):
+        # If road is empty
+        u_s = 0 if curr_dir == "r" or curr_dir == "l" else 1
+        road_ang_u = 1 if curr_dir == "l" or curr_dir == "u" else -1
+
+        dist_to_travel = (
+            abs(intersection[u_s] - pos[u_s]) - stgs.node_width / 2 - stgs.car_len / 2
+        )
+        time_arrive = fut.Road.estimate_arrive(time, dist_to_travel)
+
+        s_s = 1 if u_s == 0 else 0
+        road_ang_s = 1 if curr_dir == "r" or curr_dir == "u" else -1
+
+        next_pos = list(pos)
+        next_pos[u_s] = (
+            intersection[u_s] + (stgs.node_width / 2 + stgs.car_len / 2) * road_ang_u
+        )
+        next_pos[s_s] = intersection[s_s] + stgs.road_center * road_ang_s
+
+        fut.add_car_path(self.id, tuple(next_pos), "i", time_arrive, intersection)
+
+    def predict_turn(self, intersection, entry, turn, time):
+        # If it is free
+        extra_time = fut.time_turn[turn]
+        wait_delay = 1
+        time_arrive = time + extra_time + wait_delay
+
+        new_dir = trf.abs_dir(trf.inverse_dir[entry], turn)
+        u_s = 0 if new_dir == "r" or new_dir == "l" else 1
+        road_ang_u = 1 if new_dir == "r" or new_dir == "d" else -1
+
+        s_s = 1 if u_s == 0 else 0
+        road_ang_s = 1 if new_dir == "r" or new_dir == "u" else -1
+
+        pos = list(intersection)
+        pos[s_s] = intersection[s_s] + stgs.road_center * road_ang_s
+        pos[u_s] = (
+            intersection[u_s] + (stgs.node_width / 2 + stgs.car_len / 2) * road_ang_u
+        )
+
+        fut.add_car_path(self.id, tuple(pos), turn, time_arrive, intersection)
+
+    # The Holy Update Method_____________________________________________________________
     def update(self):
         if self.pause:
             return
@@ -202,20 +297,23 @@ class Car:
             if trf.roads[(self.start_nodes[0], my_dir)].can_out_parking(self):
                 self.state = 1
         elif self.state == 1:  # Exit parking
+            self.gas += 1
             self.park(exit=True)
-            self.gas += 1
+
         elif self.state == 2:  # Moving to destination
-            self.move_to_dest()
             self.gas += 1
+            self.move_to_dest()
+
         elif self.state == 3:  # Enter Parking
+            self.gas += 1
             self.park(exit=False)
 
     # Control flow
     turn_speed = 0.12
 
-    def park(self, exit=True):  # NOTE: Unfinished
+    def park(self, exit=True):
 
-        # NOTE: Gas: 31  Distance: 9.497076107027738
+        # NOTE: Gas: 32  Distance: 9.89707610702726
         horizontal = self.start_nodes[0][1] == self.start_nodes[1][1]
         turn = self.turn_speed  # if horizontal else -self.turn_speed
         turn = turn if exit else -turn
@@ -241,6 +339,8 @@ class Car:
                 self.turn_state = 0
                 parking.delete_car(self.start_nodes, self.init_pos)
                 self.state = 2
+                # print(self.init_pos[self.u_s] - self.pos[self.u_s])
+
                 self.center_to_road(False)
 
                 # Add to road dict
@@ -248,7 +348,7 @@ class Car:
                 trf.roads[(self.start_nodes[0], my_dir)].add_car(self, sort=True)
 
             else:
-                self.set_pos(self.graph, False)
+                self.set_pos(trf.road_network, False)
 
                 """
                 print(
@@ -261,14 +361,15 @@ class Car:
                 self.park_time = 200
                 self.gas = 0
                 self.goal = 0
-                # print(self.pos, self.angle)
+                fut.reset_path(self.id)
+                # self.c = 1
 
                 # Remove the car from the road
                 my_dir = pf.angle_to_dir[self.angle]
                 intersection_from = self.start_nodes[0]
                 trf.roads[(intersection_from, my_dir)].remove_car(self)
 
-    def move_to_dest(self):  # NOTE: UNFINISHED
+    def move_to_dest(self):
         # Move Forward
         if len(self.path) == 0:
             # self.color = (255, 255, 255)
@@ -286,7 +387,7 @@ class Car:
             elif self.path[0] == "l":
                 self.intersect_left()
 
-    def advance_to_dest(self):  # NOTE: UNFINISHED
+    def advance_to_dest(self):
         unsame_indexes = 0 if self.start_nodes[0][0] != self.start_nodes[1][0] else 1
         pos_angle = (
             1
@@ -346,8 +447,12 @@ class Car:
                         *self.junction_id
                     )
 
+                # print(fut.timing_paths[0][self.c], stgs.time)
+                # print(fut.paths[0][self.c], self.pos)
+                # self.c += 1
             else:
                 # Special parking case
+                print("YO")
                 pass
 
         else:
@@ -396,7 +501,7 @@ class Car:
         self.pos = (self.pos[0] + mov_x, self.pos[1] + mov_y)
 
     def center_to_road(self, intersection_cross=True):
-        u_s = 0 if self.start_nodes[0][0] != self.start_nodes[1][0] else 1
+        u_s = self.u_s
         road_angle = 1 if self.start_nodes[0][u_s] < self.start_nodes[1][u_s] else -1
 
         if u_s == 0:
@@ -436,7 +541,7 @@ class Car:
 
     right_turn_deviation = 0.075
 
-    def intersect_right(self):
+    def intersect_right(self):  # dist_inter: 12
         # different-axis Distance: 6.914533413670597, same-axis distance: 6.441554850340253, Gas: 22
         if self.angle - self.road_angle < math.pi / 2:
             self.move_forward(self.speed)
@@ -454,7 +559,7 @@ class Car:
 
     left_turn_deviation = 0.032
 
-    def intersect_left(self):
+    def intersect_left(self):  # dist_inter: 12
         # Same-axis Distance: 15.829976845746955, Different-axis distance: 15.87430464054819, Gas: 51
         if self.road_angle - self.angle < math.pi / 2:
             self.move_forward(self.speed)
@@ -546,6 +651,8 @@ class Car:
         return
         """
 
+    # c = 1
+
     def exit_intersection(self):
         self.turn_state = 0
         self.path.pop(0)
@@ -555,6 +662,10 @@ class Car:
         trf.junctions[self.last_intersection].crossing.remove(
             (self.junction_id[0], self.junction_id[1], self.road_to)
         )
+
+        # print(fut.timing_paths[0][self.c], stgs.time)
+        # print(fut.paths[0][self.c], self.pos)
+        # self.c += 1
 
     @property
     def points(self):
@@ -578,7 +689,7 @@ class Car:
         return 0 if self.start_nodes[0][0] != self.start_nodes[1][0] else 1
 
 
-# Parked
+# Parked______________________________________________________________________________
 class Parking_Lot:
     min_park_dist = stgs.car_len * 0.3
     dist_from_road = stgs.node_width / 2
@@ -616,29 +727,6 @@ class Parking_Lot:
                 return False
 
         return True
-
-    """
-    def is_cars_spot(self, edge, pos, car_length, ID):
-        if not edge in self().keys():
-            return False
-        # Check collisions
-        # horizontal or vertical
-        coord_index = 0 if edge[0][1] == edge[1][1] else 1
-
-        # [0] pos [1] car_len [2] id
-        for park in self()[edge]:
-            if ID == park[2]:
-                dist = abs(park[0][coord_index] - pos[coord_index])
-                min_dist = park[1] / 2 + car_length / 2 + self.min_park_dist
-
-                # if park[2] == ID and park[0] == pos:
-                #    print("YOOO")
-
-                if dist < min_dist:
-                    return True
-
-        return False
-    """
 
     def add_car(self, edge, pos, car_length, ID):
         if not edge in self().keys():

@@ -1,5 +1,6 @@
 import settings as stgs
 import traffic as trf
+import math
 
 relative_dir = {
     "u": {"u": "u", "r": "r", "l": "l"},
@@ -11,6 +12,12 @@ relative_dir = {
 opposite_dir = {"u": "d", "r": "l", "l": "r", "d": "u"}
 
 time_turn = {
+    "u": 49,
+    "l": 51,
+    "r": 22,
+}
+
+s_dist_turn = {
     "u": 49,
     "l": 22,
     "r": 51,
@@ -104,8 +111,8 @@ class Road:
         self.start = node1
         self.to = node2
 
-    def add_car_enter(self, ID, time):
-        elem = (ID, time)
+    def add_car_enter(self, ID, time, dist):
+        elem = (ID, time, dist)
         arr = self.enter
         func = lambda x: x[1]
 
@@ -157,9 +164,38 @@ class Road:
             else:
                 i += 1
 
+    def get_car_dist(self, pos):
+        ind = 0 if self.start[0] != self.to[0] else 1
+        return abs(self.to[ind] - pos[ind])
 
-paths = []  # 0: path: node/turn: time arrived each intersection?
-junctions_paths = []  # path: {(junction,dir): time}?
+    @staticmethod
+    def estimate_arrive(time, dist):
+        # Check if the road is empty at that time
+        travel_time = math.ceil(dist / stgs.car_speed)
+        return travel_time + time
+        # Else arrive at a certain time
+
+
+# _____________________________________________________________________________________________________
+def add_car_path(ID, pos, action, timing, intersection):
+    paths[ID].append((pos, action, intersection))
+    timing_paths[ID].append(timing)
+
+
+# e: enter road
+# r, l, u: intersection crossing
+# i: arrive intersection
+
+
+def reset_path(ID):
+    paths[ID] = []
+    timing_paths[ID] = []
+
+
+paths = [[] for i in range(stgs.num_car)]
+# path (node/turn)
+timing_paths = [[] for i in range(stgs.num_car)]
+# path timing
 
 # _______________________________________________________________________________________________________
 def make_intersection_dict(graph):
@@ -195,3 +231,4 @@ def make_road_dict(road_network):
 
 junctions = make_intersection_dict(trf.road_network)
 roads = make_road_dict(trf.road_network)
+# __________________________________________________________________________

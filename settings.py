@@ -28,12 +28,15 @@ adjust_y = 700  # move_y
 road_len = 52
 
 # Cars
+num_car = 1
 car_len = 8
 car_speed = 0.5
+
 park_dist = 9.89707610702726
+park_time = 32
 
 # Useful info
-# Gas: 31__  Distance Traveled: 10__ Distance Road: 8__
+# Gas: 32__  Distance Traveled: 10__ Distance Road: 8__
 road_center = 4
 
 # Time

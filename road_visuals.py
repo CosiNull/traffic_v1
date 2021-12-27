@@ -7,7 +7,7 @@ import traffic as trf
 
 drawing = False
 
-cars = [c.Car(trf.road_network, i) for i in range(1)]  # 300
+cars = [c.Car(i, False) for i in range(stgs.num_car)]  # 300
 
 
 # Moving Functions
