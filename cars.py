@@ -10,7 +10,7 @@ import traffic as trf
 
 
 # Local settings
-rdn.seed(10)
+rdn.seed(2)
 car_width = int((stgs.node_width / 2) * 0.5)
 colors = [
     (255, 0, 0),
@@ -290,6 +290,7 @@ class Car:
                 self.park_time = 200
                 self.gas = 0
                 self.goal = 0
+
                 fut.reset_path(self.id)
                 # self.c = 1
 

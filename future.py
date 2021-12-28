@@ -264,6 +264,15 @@ def predict_path(car):
             current_dirs[car.id] = trf.abs_dir(current_dirs[car.id], action)
             add_car_path(*pred)
 
+    pred = predict_park(
+        car.target_pos,
+        paths[car.id][-1][0],
+        current_dirs[car.id],
+        timing_paths[car.id][-1],
+        car,
+    )
+    add_car_path(*pred)
+
 
 def predict_road_entry(curr_dir, car):
     # Still need to adjust that
@@ -335,3 +344,17 @@ def predict_turn(intersection, entry, turn, time, car):
     pos[u_s] = intersection[u_s] + (stgs.node_width / 2 + stgs.car_len / 2) * road_ang_u
 
     return (car.id, tuple(pos), turn, time_arrive, intersection)
+
+
+def predict_park(goal, pos, curr_dir, time, car):
+    # If there is no line of course
+    u_s = 0 if curr_dir == "l" or curr_dir == "r" else 1
+    dist = abs(goal[u_s] - pos[u_s]) - stgs.park_dist
+
+    park_delay = 32
+    time_delay = 1
+    time_extra = Road.estimate_arrive(time, dist)
+
+    time_arrive = time_extra + time_delay + park_delay
+
+    return (car.id, goal, "p", time_arrive, car.predicted_nodes[1])

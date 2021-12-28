@@ -28,7 +28,7 @@ adjust_y = 700  # move_y
 road_len = 52
 
 # Cars
-num_car = 300
+num_car = 1
 car_len = 8
 car_speed = 0.5
 
