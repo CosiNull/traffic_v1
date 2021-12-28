@@ -278,9 +278,9 @@ def reverse_path(distances, previous, start, end):
 
 
 #
-def pathfind_dj(graph, start, end, start_dir, true_goal):
+def pathfind_dj(graph, start, end, start_dir):
     return reverse_path(*dijkstra(graph, start, end, start_dir), start, end)
 
 
-def pathfind_as(graph, start, end, start_dir, true_goal):
+def pathfind_as(graph, start, end, start_dir):
     return reverse_path(*a_star(graph, start, end, start_dir), start, end)
