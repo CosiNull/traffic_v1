@@ -142,9 +142,15 @@ class Dheap:
 
 
 # _________________________________________________________
-def dijkstra(graph, start=tuple[float, float], end=tuple[float, float], start_dir=str):
+
+
+def dijkstra(
+    graph,
+    start=tuple[float, float],
+    end=tuple[float, float],
+    start_dir=str,
+):
     dist = {node: math.inf for node in graph.nodes}
-    vis = set()
     prev = {}
 
     dist[start] = 0
@@ -158,24 +164,16 @@ def dijkstra(graph, start=tuple[float, float], end=tuple[float, float], start_di
 
         if node == end:
             break
-        elif node in vis:
-            continue
-
-        vis.add(node)
 
         for connection in graph.connections[node]:
-
             neighbour = connection[0]
 
-            if neighbour in prev and prev[node] == neighbour:
+            if node in prev and prev[node] == neighbour:
                 # print(node, prev[node], neighbour)
                 continue
-            elif len(vis) == 1 and opposite_dir[start_dir] == get_abs_direction(
+            elif node == start and opposite_dir[start_dir] == get_abs_direction(
                 node, neighbour
             ):
-                continue
-
-            if neighbour in vis:
                 continue
 
             current_dist = dest_dist + connection[1].length
@@ -213,12 +211,13 @@ def a_star(graph, start=tuple[float, float], end=tuple[float, float], start_dir=
             break
 
         for neighbour, edge in graph.connections[node]:
-            if neighbour in prev and prev[node] == neighbour:
+            if node in prev and prev[node] == neighbour:
                 continue
-            elif len(prev.keys()) == 0 and opposite_dir[start_dir] == get_abs_direction(
+            elif node == start and opposite_dir[start_dir] == get_abs_direction(
                 node, neighbour
             ):
                 continue
+
             current_dist = dist[node] + edge.length
             if current_dist < dist[neighbour]:
                 dist[neighbour] = current_dist
@@ -229,9 +228,13 @@ def a_star(graph, start=tuple[float, float], end=tuple[float, float], start_dir=
 """
 
 
-def a_star(graph, start=tuple[float, float], end=tuple[float, float], start_dir=str):
+def a_star(
+    graph,
+    start=tuple[float, float],
+    end=tuple[float, float],
+    start_dir=str,
+):
     dist = {node: math.inf for node in graph.nodes}
-    vis = set()
     prev = {}
 
     dist[start] = 0
@@ -239,33 +242,19 @@ def a_star(graph, start=tuple[float, float], end=tuple[float, float], start_dir=
     pq.insert((start, 0))
 
     while len(pq()) > 0:
-        data = pq.poll()
-        node = data[0]
-        dest_dist = data[1]
-
+        node = pq.poll()[0]
         if node == end:
             break
-        elif node in vis:
-            continue
 
-        vis.add(node)
-
-        for connection in graph.connections[node]:
-
-            neighbour = connection[0]
-
-            if neighbour in prev and prev[node] == neighbour:
-                # print(node, prev[node], neighbour)
+        for neighbour, edge in graph.connections[node]:
+            if node in prev and prev[node] == neighbour:
                 continue
-            elif len(vis) == 1 and opposite_dir[start_dir] == get_abs_direction(
+            elif node == start and opposite_dir[start_dir] == get_abs_direction(
                 node, neighbour
             ):
                 continue
 
-            if neighbour in vis:
-                continue
-
-            current_dist = dest_dist + connection[1].length
+            current_dist = dist[node] + edge.length
             if current_dist < dist[neighbour]:
                 dist[neighbour] = current_dist
                 pq.insert((neighbour, current_dist + manhattan_dist(neighbour, end)))
@@ -289,9 +278,9 @@ def reverse_path(distances, previous, start, end):
 
 
 #
-def pathfind_dj(graph, start, end, start_dir):
+def pathfind_dj(graph, start, end, start_dir, true_goal):
     return reverse_path(*dijkstra(graph, start, end, start_dir), start, end)
 
 
-def pathfind_as(graph, start, end, start_dir):
+def pathfind_as(graph, start, end, start_dir, true_goal):
     return reverse_path(*a_star(graph, start, end, start_dir), start, end)

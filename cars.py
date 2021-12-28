@@ -10,7 +10,7 @@ import traffic as trf
 
 
 # Local settings
-rdn.seed(2)
+rdn.seed(10)
 car_width = int((stgs.node_width / 2) * 0.5)
 colors = [
     (255, 0, 0),
@@ -118,19 +118,30 @@ class Car:
         start_dir = pf.angle_to_dir[self.angle]
 
         if func == "dj":
-            self.path = pf.pathfind_dj(trf.road_network, start, goal, start_dir)[0]
+            self.path = pf.pathfind_dj(
+                trf.road_network,
+                start,
+                goal,
+                start_dir,
+            )[0]
         elif func == "as":
-            self.path = pf.pathfind_as(trf.road_network, start, goal, start_dir)[0]
+            self.path = pf.pathfind_as(
+                trf.road_network,
+                start,
+                goal,
+                start_dir,
+            )[0]
         else:
             raise Exception("ERROR: Bad 'func' Parameter")
+        if self.path == None:
+            return
 
-        # Next step path itinerary NOTE
+        # Next step path itinerary NOTE\
+
         last_node = self.path[-1]
         before_last_node = self.path[-2]
 
         self.goal = 0
-        if not len(self.path) >= 2:
-            raise Exception("Path too short")
 
         u_s = 0 if last_node[0] != before_last_node[0] else 1
         a = (
@@ -181,6 +192,7 @@ class Car:
             self.path = None
             return
 
+        # The stuff
         def add_dir(path_list, index, abs_curr_dir):
             if index >= len(path_list) - 1:
                 return
@@ -189,7 +201,7 @@ class Car:
             try:
                 turn = pf.relative_dir[abs_curr_dir][direc]
             except:
-                raise Exception(abs_curr_dir, direc)
+                raise Exception(abs_curr_dir, direc, index, "\n", path_list)
 
             path_list.insert(index + 1, (turn))
             add_dir(path_list, index + 2, direc)
@@ -369,7 +381,6 @@ class Car:
                 # self.c += 1
             else:
                 # Special parking case
-                print("YO")
                 pass
 
         else:
