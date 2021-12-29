@@ -212,7 +212,14 @@ class Car:
 
     # Future predicting_________________________________________________________________________
     def predict_path(self):
-        fut.predict_path(self)
+        fut.save_true_path(
+            self.id,
+            self.path,
+            self.init_pos,
+            self.target_pos,
+            pf.angle_to_dir[self.angle],
+        )
+        fut.predict_path()
 
     # The Holy Update Method_____________________________________________________________
     def update(self):
@@ -240,7 +247,6 @@ class Car:
     def park(self, exit=True):
 
         # NOTE: Gas: 32  Distance: 9.89707610702726
-        horizontal = self.start_nodes[0][1] == self.start_nodes[1][1]
         turn = self.turn_speed  # if horizontal else -self.turn_speed
         turn = turn if exit else -turn
 
@@ -279,18 +285,13 @@ class Car:
             else:
                 self.set_pos(trf.road_network, False)
 
-                """
-                print(
-                    f"\nPOS: {self.pos},\nTARGET_POS{self.target_pos},\nSTART_NODES {self.start_nodes},\nPREDICTED_NODES{self.predicted_nodes},\nGOAL: {self.goal}"
-                )
-                """
-
                 self.state = 0
                 self.path = None
                 self.park_time = 200
                 self.gas = 0
                 self.goal = 0
 
+                print(fut.timing_paths[0][-1], stgs.time)
                 fut.reset_path(self.id)
                 # self.c = 1
 
