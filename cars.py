@@ -241,7 +241,7 @@ class Car:
             self.gas += 1
             self.park(exit=False)
 
-    # Control flow
+    # Basic Control flow
     turn_speed = 0.12
 
     def park(self, exit=True):
@@ -277,7 +277,19 @@ class Car:
 
                 # Add to road dict
                 my_dir = trf.entry_dir(*self.start_nodes)
-                trf.roads[(self.start_nodes[0], my_dir)].add_car(self, sort=True)
+                junc = self.start_nodes[0]
+                trf.roads[(junc, my_dir)].add_car(self, sort=True)
+
+                """
+                # Road enter and estimations
+                ind = fut.binary_search_ds(stgs.time, fut.roads[(junc, my_dir)].enter)
+                print(fut.roads[(junc, my_dir)].enter[ind], stgs.time)
+            
+                ind = fut.binary_search_ds(
+                    stgs.time, fut.roads[(junc, my_dir)].estimation
+                )
+                print(fut.roads[(junc, my_dir)].estimation[ind], stgs.time)
+                """
 
                 # print(fut.timing_paths[0][0], stgs.time)
                 # print(fut.paths[0][0], self.pos)
@@ -297,8 +309,14 @@ class Car:
 
                 # Remove the car from the road
                 my_dir = pf.angle_to_dir[self.angle]
-                intersection_from = self.start_nodes[0]
-                trf.roads[(intersection_from, my_dir)].remove_car(self)
+                junc = self.start_nodes[0]
+                trf.roads[(junc, my_dir)].remove_car(self)
+
+                """
+                # Road Exit
+                ind = fut.binary_search_ds(stgs.time, fut.roads[(junc, my_dir)].leave)
+                print(fut.roads[(junc, my_dir)].leave[ind], stgs.time)
+                """
 
     def move_to_dest(self):
         # Move Forward
@@ -327,25 +345,12 @@ class Car:
         )
 
         # To understand the dist formula and not spend 2 minutes staring at it, Imagine that the car is going to the right
-        """
-        car_line = 0
-        """
         if not len(self.path) == 1:
-            """
-            cars_waiting = trf.junctions[self.path[0]].num_cars_entry(
-                trf.angle_to_intersect[self.angle]
-            )
-            car_line = cars_waiting * (stgs.car_len + parking.min_park_dist)
-            """
-
             dist = (
                 self.path[0][unsame_indexes]
                 - (stgs.node_width / 2 + self.len / 2) * pos_angle
             ) - (self.pos[unsame_indexes])
             dist = abs(dist)
-            """
-            dist -= car_line
-            """
 
             # NOTE ADD LIMIT HERE
         else:
@@ -363,10 +368,6 @@ class Car:
             # self.save = (self.pos, self.gas)
             self.last_intersection = self.path.pop(0)
 
-            """
-            self.intersection_line = False
-            """
-
             if len(self.path) > 1:
                 from_inter = trf.angle_to_intersect[self.angle]
                 self.junction_id = (self.id, from_inter)
@@ -377,6 +378,15 @@ class Car:
                     trf.junctions[self.last_intersection].add_car_entry(
                         *self.junction_id
                     )
+
+                    """
+                    # Intersection enter
+                    junc = self.last_intersection
+                    ind = fut.binary_search_ds(
+                        stgs.time, fut.junctions[junc].entries[from_inter]
+                    )
+                    print(fut.junctions[junc].entries[from_inter][ind], stgs.time)
+                    """
 
                 # print(fut.timing_paths[0][self.c], stgs.time)
                 # print(fut.paths[0][self.c], self.pos)
@@ -535,51 +545,39 @@ class Car:
             intersection_from = self.start_nodes[0]
             trf.roads[(intersection_from, my_dir)].pop_car(self)
 
-            # Add it to other one
+            # Add it to other Road
             new_dir = trf.abs_dir(pf.angle_to_dir[self.angle], self.path[0])
             intersection_from = self.start_nodes[1]
             trf.roads[(intersection_from, new_dir)].add_car(self)
 
-        """"
-        elif self.intersection_line:
-            # Calculate the target distance
-            cars_waiting = trf.junctions[self.last_intersection].entries[
-                trf.angle_to_intersect[self.angle]
-            ]
-            cars_before = 0
-            for i in cars_waiting:
-                if i == self.id:
-                    break
-                cars_before += 1
-
-            car_line = cars_before * (stgs.car_len + parking.min_park_dist)
-            target_dist = car_line + stgs.node_width / 2 + self.len / 2
-
-            dist_to_travel = (
-                trf.intersection_dist(self.last_intersection, self.pos, self.angle)
-                - target_dist
+            # Testing
+            """
+            # Crossing_enter
+            junc = self.last_intersection
+            ind = fut.binary_search_ds(
+                stgs.time, fut.junctions[junc].crossing_enter
             )
+            print(fut.junctions[junc].crossing_enter[ind], stgs.time)
+            """
+            """"
+            # Road_exit
+            junc = self.start_nodes[0]
+            ind = fut.binary_search_ds(stgs.time, fut.roads[(junc, start_dir)].leave)
+            print(fut.roads[(junc, start_dir)].leave[ind], stgs.time)
+            """
 
-            if dist_to_travel > 0:
-                if dist_to_travel < self.speed:
-                    self.move_forward(dist_to_travel)
-                else:
-                    self.move_forward(self.speed)
-            else:
-                # if dist_to_travel < 0:
-                #    print("UMMMMMM")
-                if (
-                    trf.intersection_dist(self.last_intersection, self.pos, self.angle)
-                    == self.len / 2 + stgs.node_width / 2
-                ):
-                    self.intersection_line = False
-                    junction_data.add_car_queue(*self.junction_id)
-
-            # Make it advance to it
-            # If at the front of the queue not in line anymore
-        
-        return
-        """
+            #  Road_enter and estimation
+            """
+            junc = self.last_intersection
+            
+            ind = fut.binary_search_ds(stgs.time, fut.roads[(junc, next_dir)].enter)
+            print(fut.roads[(junc, next_dir)].enter[ind], stgs.time)
+            
+            ind = fut.binary_search_ds(
+                stgs.time, fut.roads[(junc, next_dir)].estimation
+            )
+            print(fut.roads[(junc, next_dir)].estimation[ind], stgs.time)
+            """
 
     # c = 1
 
@@ -593,6 +591,14 @@ class Car:
             (self.junction_id[0], self.junction_id[1], self.road_to)
         )
 
+        """
+        # Crossing_exit
+        junc = self.last_intersection
+        ind = fut.binary_search_ds(stgs.time, fut.junctions[junc].crossing_exit)
+        print(fut.junctions[junc].crossing_exit[ind], stgs.time)
+        """
+
+        # Crossing remove
         # print(fut.timing_paths[0][self.c], stgs.time)
         # print(fut.paths[0][self.c], self.pos)
         # self.c += 1

@@ -1,5 +1,6 @@
 import road_visuals as rv
 import settings as stgs
+import future as fut
 import cars
 
 running = True
@@ -14,3 +15,9 @@ while running:
 
     if stgs.time > 180:
         rv.update_cars()
+
+    if stgs.time % 150 == 149:
+        for road in fut.roads.values():
+            road.update_road()
+        for intersection in fut.junctions.values():
+            intersection.update_intersection()

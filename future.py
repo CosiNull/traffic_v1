@@ -1,7 +1,5 @@
-from os import curdir
 import settings as stgs
 import traffic as trf
-import pathfinding as pf
 import math
 
 relative_dir = {
@@ -19,11 +17,7 @@ time_turn = {
     "r": 22,
 }
 
-s_dist_turn = {
-    "u": 49,
-    "l": 22,
-    "r": 51,
-}
+junction_space = stgs.node_width / 2 + stgs.car_len / 2
 
 
 def binary_search(elem, arr, func):
@@ -34,6 +28,21 @@ def binary_search(elem, arr, func):
         mid = int((start + end) / 2)
 
         if func(arr[mid]) < func(elem):
+            start = mid + 1
+        else:
+            end = mid
+
+    return start
+
+
+def binary_search_ds(elem, arr, func=lambda x: x[1]):
+    start = 0
+    end = len(arr)
+
+    while start < end:
+        mid = int((start + end) / 2)
+
+        if func(arr[mid]) < elem:
             start = mid + 1
         else:
             end = mid
@@ -64,7 +73,9 @@ class Intersection:
         func = lambda x: x[1]
         binary_insertion(elem, arr, func)
 
-        time_crossing = time_turn[relative_dir[opposite_dir[entry]][entry_to]]
+        time_crossing = time_turn[
+            relative_dir[opposite_dir[entry]][opposite_dir[entry_to]]
+        ]
         elem_2 = (ID, time + time_crossing, entry, entry_to)
         arr_2 = self.crossing_exit
         binary_insertion(elem_2, arr_2, func)
@@ -106,6 +117,7 @@ class Intersection:
 class Road:
     def __init__(self, node1, node2):
         self.enter = []
+        self.estimation = []
         self.leave = []
         self.line = [(0, 0)]  # (id_last_car, length,Time)
 
@@ -116,6 +128,14 @@ class Road:
     def add_car_enter(self, ID, time, dist):
         elem = (ID, time, dist)
         arr = self.enter
+        func = lambda x: x[1]
+
+        binary_insertion(elem, arr, func)
+
+    def add_car_junc_estimation(self, ID, time, dist):
+        timing = Road.estimate_arrive(time, dist)
+        elem = (ID, timing)
+        arr = self.estimation
         func = lambda x: x[1]
 
         binary_insertion(elem, arr, func)
@@ -134,11 +154,13 @@ class Road:
         # Getting the ids to remove
         id_removal = set()
         id_removal_2 = set()
+        id_removal_3 = set()
 
         for elem in self.leave:
             if elem[1] <= stgs.time:
                 id_removal.add(elem[0])
                 id_removal_2.add(elem[0])
+                id_removal_3.add(elem[0])
             else:
                 break
 
@@ -156,6 +178,7 @@ class Road:
             else:
                 i += 1
 
+        """
         # Remove in line
         i = 0
         while len(id_removal_2) > 0:
@@ -163,6 +186,17 @@ class Road:
             if ID in id_removal_2:
                 id_removal_2.remove(ID)
                 self.line.pop(i)
+            else:
+                i += 1
+        """
+
+        # Estimation
+        i = 0
+        while len(id_removal_3) > 0:
+            ID = self.estimation[i][0]
+            if ID in id_removal_3:
+                id_removal_3.remove(ID)
+                self.estimation.pop(i)
             else:
                 i += 1
 
@@ -267,7 +301,6 @@ timing_paths = [[] for i in range(stgs.num_car)]
 # path timing
 
 # Path predicting__________________________________________________________________________
-# Simple
 def predict_path():
     queue = []
 
@@ -285,17 +318,49 @@ def predict_path():
             add_car_path(ID, pos, time)
             pred = predict_intersection(ID)
             binary_insert_q(pred, queue)
+
+            # Register to road enter
+            road = get_entry_road(true_paths[ID][1][0], dir_paths[ID][1])
+            dist = road.get_car_dist(pos) - junction_space
+            road.add_car_enter(ID, time, dist)
+            road.add_car_junc_estimation(ID, time, dist)
+
         elif action == "i":
             # If there are no cars still at intersection execute the following
             # Else: Repredict when it will arrive at the intersection
             add_car_path(ID, pos, time)
             pred = predict_junc_crossable(ID)
             binary_insert_q(pred, queue)
+
+            # Adding to datastructure if no one is there
+            intersect = junctions[junction]
+            entry = trf.inverse_dir[dir_paths[ID][len(paths[ID]) - 1]]
+            intersect.add_car_entry(ID, entry, time)
+
         elif action == "l" or action == "r" or action == "u":
             crossable_pred = predict_junc_crossable(ID)
-            if crossable_pred[2] == time:
+            if crossable_pred[2] == time:  # Let's cross
+                # Predicting next cross
                 finish_cross = predict_turn(ID)
                 add_car_path(*finish_cross)
+
+                # Register road Exit
+                road = get_entry_road(junction, dir_paths[ID][len(paths[ID]) - 2])
+                road.add_car_exit(ID, time)
+
+                # Register crossing
+                intersect = junctions[junction]
+                entry = trf.inverse_dir[dir_paths[ID][len(paths[ID]) - 2]]
+                entry_to = trf.inverse_dir[dir_paths[ID][len(paths[ID])]]
+                intersect.add_car_crossing(ID, time, entry, entry_to)
+
+                # Add to next road
+                next_road = roads[(junction, dir_paths[ID][len(paths[ID])])]
+                time_cross = time_turn[action] + 1  # 1 is time delay
+                extra_dist = time_cross * stgs.car_speed - junction_space
+                dist = next_road.get_car_dist(finish_cross[1]) + extra_dist
+                next_road.add_car_enter(ID, time, dist)
+                next_road.add_car_junc_estimation(ID, time, dist - stgs.car_speed)
 
                 pred = 0
                 if len(paths[ID]) + 1 == len(dir_paths[ID]):
@@ -311,6 +376,10 @@ def predict_path():
             # If the road is clean
             # Else repredict by seeing when other car exits road
             add_car_path(ID, pos, time)
+
+            # Register exit
+            road = roads[(true_paths[ID][-2][0], dir_paths[ID][-1])]
+            road.add_car_exit(ID, time)
 
 
 def predict_road_entry(ID):
@@ -417,7 +486,7 @@ def predict_junc_crossable(ID):
     # If intersection is free
     # For Road Checking, Check when all cars exits the soonest and set from here (Include park)
     time = timing_paths[ID][count - 1]
-    return (ID, 0, time)
+    return (ID, 0, time + 1)
 
 
 # ____________________________________
@@ -444,3 +513,14 @@ def binary_search_q(elem, arr):
 
 def binary_insert_q(elem, arr):
     arr.insert(binary_search_q(elem, arr), elem)
+
+
+# _____________________________________
+def get_entry_road(node_to, direc):
+    neighbours = trf.road_network.connections[node_to]
+
+    for neighbour, edge in neighbours:
+        if trf.entry_dir(neighbour, node_to) == direc:
+            return roads[(neighbour, direc)]
+
+    raise Exception("Error in determinating Intersection for road entry")

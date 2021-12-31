@@ -185,11 +185,6 @@ def dijkstra(
     return (dist, prev)
 
 
-# To do today
-# Check if it is faster with dary heap and find a way to adjust d programatically
-# Make the cars follow a pathfinding
-# Think of a data structure that holds the current passings
-# Think of a data structure that holds the future passings
 # _________________________________________________________________________
 # A*
 def manhattan_dist(start, end):
