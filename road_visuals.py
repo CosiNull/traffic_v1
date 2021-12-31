@@ -2,7 +2,6 @@
 import settings as stgs
 import cars as c
 import pathfinding as pf
-import pickle
 import traffic as trf
 
 drawing = False

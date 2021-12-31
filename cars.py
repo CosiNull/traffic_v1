@@ -10,7 +10,7 @@ import traffic as trf
 
 
 # Local settings
-rdn.seed(2)
+rdn.seed(stgs.seed)
 car_width = int((stgs.node_width / 2) * 0.5)
 colors = [
     (255, 0, 0),
@@ -303,7 +303,7 @@ class Car:
                 self.gas = 0
                 self.goal = 0
 
-                print(fut.timing_paths[0][-1], stgs.time)
+                print(fut.timing_paths[self.id][-1], stgs.time)
                 fut.reset_path(self.id)
                 # self.c = 1
 
@@ -317,6 +317,9 @@ class Car:
                 ind = fut.binary_search_ds(stgs.time, fut.roads[(junc, my_dir)].leave)
                 print(fut.roads[(junc, my_dir)].leave[ind], stgs.time)
                 """
+
+                # Can out this in the future
+                self.pause = True
 
     def move_to_dest(self):
         # Move Forward

@@ -257,6 +257,7 @@ def reset_path(ID):
     timing_paths[ID] = []
     true_paths[ID] = []
     dir_paths[ID] = []
+    start_times[ID] = None
 
 
 def save_true_path(ID, car_path, init_pos, final_pos, direc):
@@ -285,6 +286,8 @@ def save_true_path(ID, car_path, init_pos, final_pos, direc):
     true_paths[ID] = path
     dir_paths[ID] = d_path
 
+    start_times[ID] = stgs.time
+
 
 # e: enter road
 # r, l, u: intersection crossing
@@ -299,15 +302,18 @@ paths = [[] for i in range(stgs.num_car)]
 # path (true_pos)
 timing_paths = [[] for i in range(stgs.num_car)]
 # path timing
+start_times = [None for i in range(stgs.num_car)]
 
 # Path predicting__________________________________________________________________________
 def predict_path():
     queue = []
+    reset_all_datastructures()
 
     # Initilialize in simple way
     for ID in range(stgs.num_car):
-        pred = predict_road_entry(ID)
-        binary_insert_q(pred, queue)
+        if not start_times[ID] == None:
+            pred = predict_road_entry(ID)
+            binary_insert_q(pred, queue)
 
     # The Great Loop
     while len(queue) > 0:
@@ -383,9 +389,9 @@ def predict_path():
 
 
 def predict_road_entry(ID):
-    curr_dir = dir_paths[ID][0][0]
+    curr_dir = dir_paths[ID][0]
     # Still need to adjust that
-    start_time = stgs.time
+    start_time = start_times[ID]
     # Exit parking code
     u_s = 0 if curr_dir == "l" or curr_dir == "r" else 1
     road_angle = 1 if curr_dir == "d" or curr_dir == "r" else -1
@@ -524,3 +530,15 @@ def get_entry_road(node_to, direc):
             return roads[(neighbour, direc)]
 
     raise Exception("Error in determinating Intersection for road entry")
+
+
+def reset_all_datastructures():
+    global roads
+    global junctions
+    # Reset paths
+    for ID in range(stgs.num_car):
+        paths[ID] = []
+        timing_paths[ID] = []
+    # Reset Road
+    roads = make_road_dict(trf.road_network)
+    junctions = make_intersection_dict(trf.road_network)

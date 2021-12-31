@@ -1,5 +1,6 @@
 # Files
 road_file = "test3.pickle"
+seed = 2
 
 # Screen
 width = 1100
@@ -28,7 +29,7 @@ adjust_y = 700  # move_y
 road_len = 52
 
 # Cars
-num_car = 1
+num_car = 30
 car_len = 8
 car_speed = 0.5
 
