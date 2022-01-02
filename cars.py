@@ -553,15 +553,16 @@ class Car:
             intersection_from = self.start_nodes[1]
             trf.roads[(intersection_from, new_dir)].add_car(self)
 
-            # Testing
-            """
             # Crossing_enter
             junc = self.last_intersection
-            ind = fut.binary_search_ds(
-                stgs.time, fut.junctions[junc].crossing_enter
-            )
-            print(fut.junctions[junc].crossing_enter[ind], stgs.time)
-            """
+            ind = fut.linear_search(self.id, fut.junctions[junc].crossing_enter)
+            timing = fut.junctions[junc].crossing_enter[ind][1]
+            if timing != stgs.time:
+                global yo
+                yo += 1
+                print(yo, junc, self.id)
+                print("time diff", timing, stgs.time)
+
             """"
             # Road_exit
             junc = self.start_nodes[0]
@@ -686,3 +687,4 @@ class Parking_Lot:
 
 
 parking = Parking_Lot()
+yo = 0

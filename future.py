@@ -73,9 +73,7 @@ class Intersection:
         func = lambda x: x[1]
         binary_insertion(elem, arr, func)
 
-        time_crossing = time_turn[
-            relative_dir[opposite_dir[entry]][opposite_dir[entry_to]]
-        ]
+        time_crossing = time_turn[relative_dir[opposite_dir[entry]][entry_to]]
         elem_2 = (ID, time + time_crossing, entry, entry_to)
         arr_2 = self.crossing_exit
         binary_insertion(elem_2, arr_2, func)
@@ -333,9 +331,15 @@ def predict_path():
 
         elif action == "i":
             # If there are no cars still at intersection execute the following
+            """
+            1. Check car in front
+            2. Check if exited
+            3. If not well readjust timing to his exit + distance
+            """
             # Else: Repredict when it will arrive at the intersection
+
             add_car_path(ID, pos, time)
-            pred = predict_junc_crossable(ID)
+            pred = predict_junc_crossable(ID, time + 1)
             binary_insert_q(pred, queue)
 
             # Adding to datastructure if no one is there
@@ -344,7 +348,7 @@ def predict_path():
             intersect.add_car_entry(ID, entry, time)
 
         elif action == "l" or action == "r" or action == "u":
-            crossable_pred = predict_junc_crossable(ID)
+            crossable_pred = predict_junc_crossable(ID, time)
             if crossable_pred[2] == time:  # Let's cross
                 # Predicting next cross
                 finish_cross = predict_turn(ID)
@@ -357,7 +361,7 @@ def predict_path():
                 # Register crossing
                 intersect = junctions[junction]
                 entry = trf.inverse_dir[dir_paths[ID][len(paths[ID]) - 2]]
-                entry_to = trf.inverse_dir[dir_paths[ID][len(paths[ID])]]
+                entry_to = dir_paths[ID][len(paths[ID])]
                 intersect.add_car_crossing(ID, time, entry, entry_to)
 
                 # Add to next road
@@ -377,7 +381,7 @@ def predict_path():
                 binary_insert_q(pred, queue)
             else:
                 # Repredict
-                binary_insert_q(*crossable_pred)
+                binary_insert_q(crossable_pred, queue)
         elif action == "p":
             # If the road is clean
             # Else repredict by seeing when other car exits road
@@ -487,12 +491,32 @@ def predict_park(ID):
     return (ID, goal, time_arrive)
 
 
-def predict_junc_crossable(ID):
+def predict_junc_crossable(ID, time):
     count = len(paths[ID])
-    # If intersection is free
-    # For Road Checking, Check when all cars exits the soonest and set from here (Include park)
-    time = timing_paths[ID][count - 1]
-    return (ID, 0, time + 1)
+    timing = time
+
+    # If intersection is not free
+    # 1. Check everyone in exit_crossing who exited after you
+    # 2. Check from biggest time to smallest
+    # 2.1 IF biggest, crossable, go down ELSE Biggest would be new threashold
+    # 2.2 When decide threshold CONSIDER ORDER with ID
+
+    # NOTE We are not taking into account if next road is full in future
+
+    junc = junctions[true_paths[ID][count][0]]
+    ind = binary_search_ds(time, junc.crossing_exit)
+
+    m_e = trf.inverse_dir[dir_paths[ID][len(paths[ID]) - 1]]
+    m_e_t = dir_paths[ID][len(paths[ID]) + 1]
+
+    arr = junc.crossing_exit[ind:]
+    arr.reverse()
+
+    for ID_2, time_, entry, entry_to in arr:
+        if not (entry, entry_to) in trf.no_conflicts[(m_e, m_e_t)]:
+            timing = time_ if ID > ID_2 else time_ + 1
+
+    return (ID, 0, timing)
 
 
 # ____________________________________
@@ -542,3 +566,10 @@ def reset_all_datastructures():
     # Reset Road
     roads = make_road_dict(trf.road_network)
     junctions = make_intersection_dict(trf.road_network)
+
+
+# _____________
+def linear_search(elem, arr, func=lambda x: x[0], step=1):
+    for i in range(0, len(arr), step):
+        if func(arr[i]) == elem:
+            return i
