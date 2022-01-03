@@ -306,12 +306,15 @@ start_times = [None for i in range(stgs.num_car)]
 def predict_path():
     queue = []
     reset_all_datastructures()
+    preds = [None for i in range(stgs.num_car)]
 
     # Initilialize in simple way
     for ID in range(stgs.num_car):
         if not start_times[ID] == None:
             pred = predict_road_entry(ID)
             binary_insert_q(pred, queue)
+
+            preds[ID] = pred[2]
 
     # The Great Loop
     while len(queue) > 0:
@@ -323,6 +326,8 @@ def predict_path():
             pred = predict_intersection(ID)
             binary_insert_q(pred, queue)
 
+            preds[ID] = pred[2]
+
             # Register to road enter
             road = get_entry_road(true_paths[ID][1][0], dir_paths[ID][1])
             dist = road.get_car_dist(pos) - junction_space
@@ -331,27 +336,29 @@ def predict_path():
 
         elif action == "i":
             # If there are no cars still at intersection execute the following
-            """
-            1. Check car in front
-            2. Check if exited
-            3. If not well readjust timing to his exit + distance
-            """
             # Else: Repredict when it will arrive at the intersection
+            car_in_front = predict_car_in_front(ID, preds)
 
-            add_car_path(ID, pos, time)
-            pred = predict_junc_crossable(ID, time + 1)
-            binary_insert_q(pred, queue)
+            if car_in_front == None:  # if no one is there
+                add_car_path(ID, pos, time)
+                pred = predict_junc_crossable(ID, time + 1)
+                binary_insert_q(pred, queue)
 
-            # Adding to datastructure if no one is there
-            intersect = junctions[junction]
-            entry = trf.inverse_dir[dir_paths[ID][len(paths[ID]) - 1]]
-            intersect.add_car_entry(ID, entry, time)
+                preds[ID] = pred[2]
+
+                # Adding to datastructure
+                intersect = junctions[junction]
+                entry = trf.inverse_dir[dir_paths[ID][len(paths[ID]) - 1]]
+                intersect.add_car_entry(ID, entry, time)
+            else:
+                binary_insert_q(car_in_front, queue)
+                preds[ID] = car_in_front[2]
 
         elif action == "l" or action == "r" or action == "u":
             crossable_pred = predict_junc_crossable(ID, time)
             if crossable_pred[2] == time:  # Let's cross
                 # Predicting next cross
-                finish_cross = predict_turn(ID)
+                finish_cross = predict_turn(ID, time)
                 add_car_path(*finish_cross)
 
                 # Register road Exit
@@ -379,9 +386,13 @@ def predict_path():
                     pred = predict_intersection(ID)
 
                 binary_insert_q(pred, queue)
+
+                preds[ID] = pred[2]
             else:
                 # Repredict
                 binary_insert_q(crossable_pred, queue)
+
+                preds[ID] = crossable_pred[2]
         elif action == "p":
             # If the road is clean
             # Else repredict by seeing when other car exits road
@@ -390,6 +401,8 @@ def predict_path():
             # Register exit
             road = roads[(true_paths[ID][-2][0], dir_paths[ID][-1])]
             road.add_car_exit(ID, time)
+
+            preds[ID] = None
 
 
 def predict_road_entry(ID):
@@ -446,17 +459,15 @@ def predict_intersection(ID):
     return (ID, tuple(next_pos), time_arrive)
 
 
-def predict_turn(ID):
+def predict_turn(ID, time):
     count = len(paths[ID])
 
     intersection, turn = true_paths[ID][count]
     entry = trf.inverse_dir[dir_paths[ID][count - 1]]
-    time = timing_paths[ID][count - 1]
 
     # If Intersection is Free
     extra_time = time_turn[turn]
-    wait_delay = 1
-    time_arrive = time + extra_time + wait_delay
+    time_arrive = time + extra_time
 
     new_dir = trf.abs_dir(trf.inverse_dir[entry], turn)
     u_s = 0 if new_dir == "r" or new_dir == "l" else 1
@@ -515,8 +526,50 @@ def predict_junc_crossable(ID, time):
     for ID_2, time_, entry, entry_to in arr:
         if not (entry, entry_to) in trf.no_conflicts[(m_e, m_e_t)]:
             timing = time_ if ID > ID_2 else time_ + 1
+            break
 
     return (ID, 0, timing)
+
+
+def predict_car_in_front(ID, preds):
+    return None
+    # 1. Check who has estimate just before you
+    # 1.1 Linear search backwards
+    # 2. Get pred of car before
+    # 2.1 Make sure car_before is still in road by checking if its action is:
+    # 2.2: r,l,u on its junction, i on its junction, or p
+    # 2.3 Else return original pred
+    # 3.1 If car before is first: Return pred_leave + (dist_car + min_dist) * speed
+    # 3.2 Else car before is not first: Return same thing but + 1
+
+    junction = true_paths[ID][len(paths[ID])][0]
+    road = get_entry_road(junction, dir_paths[ID][len(paths[ID])])
+    ind = backward_linear_s(ID, road.estimation, step=-1)
+
+    # Making sure that the car before has not parked
+    while True:
+        if ind == 0:
+            return None
+        ID_b = road.estimation[ind - 1][0]
+        count_b = len(paths[ID_b])
+        if count_b == len(true_paths[ID_b]):
+            ind -= 1
+        else:
+            break
+
+    # Calculating the pred of the car
+    junction_b, action_b = true_paths[ID_b][count_b]
+    if junction_b == junction:
+        parking_dist = stgs.car_len * 0.3  # Check cars.py
+        dist = stgs.car_len + parking_dist
+        dist = math.ceil(dist) if not action_b == "i" else dist
+
+        timing = preds[ID_b] + dist / stgs.car_speed
+        timing = timing + 1 if action_b == "i" else timing
+        return (ID, 0, timing)
+
+    else:
+        return None
 
 
 # ____________________________________
@@ -571,5 +624,11 @@ def reset_all_datastructures():
 # _____________
 def linear_search(elem, arr, func=lambda x: x[0], step=1):
     for i in range(0, len(arr), step):
+        if func(arr[i]) == elem:
+            return i
+
+
+def backward_linear_s(elem, arr, func=lambda x: x[0], step=-1):
+    for i in range(len(arr) - 1, -1, step):
         if func(arr[i]) == elem:
             return i

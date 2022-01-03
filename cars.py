@@ -391,8 +391,8 @@ class Car:
                     print(fut.junctions[junc].entries[from_inter][ind], stgs.time)
                     """
 
-                # print(fut.timing_paths[0][self.c], stgs.time)
-                # print(fut.paths[0][self.c], self.pos)
+                # print(fut.timing_paths[25][self.c], stgs.time)
+                # print(fut.paths[25][self.c], self.pos)
                 # self.c += 1
             else:
                 # Special parking case
@@ -560,8 +560,9 @@ class Car:
             if timing != stgs.time:
                 global yo
                 yo += 1
-                print(yo, junc, self.id)
-                print("time diff", timing, stgs.time)
+                print("_______________________________")
+                print(yo, junc, self.id, self.color)
+                print(timing, stgs.time)
 
             """"
             # Road_exit
@@ -583,7 +584,7 @@ class Car:
             print(fut.roads[(junc, next_dir)].estimation[ind], stgs.time)
             """
 
-    # c = 1
+    c = 1
 
     def exit_intersection(self):
         self.turn_state = 0
@@ -603,8 +604,7 @@ class Car:
         """
 
         # Crossing remove
-        # print(fut.timing_paths[0][self.c], stgs.time)
-        # print(fut.paths[0][self.c], self.pos)
+        # print(fut.paths[25][self.c], self.pos)
         # self.c += 1
 
     @property
