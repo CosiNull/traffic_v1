@@ -337,7 +337,7 @@ def predict_path():
         elif action == "i":
             # If there are no cars still at intersection execute the following
             # Else: Repredict when it will arrive at the intersection
-            car_in_front = predict_car_in_front(ID, preds)
+            car_in_front = predict_car_in_front(ID, preds, time)
 
             if car_in_front == None:  # if no one is there
                 add_car_path(ID, pos, time)
@@ -531,8 +531,8 @@ def predict_junc_crossable(ID, time):
     return (ID, 0, timing)
 
 
-def predict_car_in_front(ID, preds):
-    return None
+def predict_car_in_front(ID, preds, time):
+
     # 1. Check who has estimate just before you
     # 1.1 Linear search backwards
     # 2. Get pred of car before
@@ -559,17 +559,30 @@ def predict_car_in_front(ID, preds):
 
     # Calculating the pred of the car
     junction_b, action_b = true_paths[ID_b][count_b]
+
+    car_leave = None
+
     if junction_b == junction:
-        parking_dist = stgs.car_len * 0.3  # Check cars.py
-        dist = stgs.car_len + parking_dist
-        dist = math.ceil(dist) if not action_b == "i" else dist
-
-        timing = preds[ID_b] + dist / stgs.car_speed
-        timing = timing + 1 if action_b == "i" else timing
+        dist = stgs.car_len + stgs.min_dist
+        timing = preds[ID_b] + int(dist / stgs.car_speed)
+        # timing = timing + 1 if action_b == "i" and ID < ID_b else timing
+        timing = (
+            timing - 1 if ID > ID_b else timing
+        )  # Special technicality with update order
         return (ID, 0, timing)
-
     else:
-        return None
+        past_junc, past_act = true_paths[ID_b][count_b - 1]
+        if past_junc == junction:
+            timing_b = timing_paths[ID_b][count_b - 1] - time_turn[past_act] - 1
+            dist = stgs.car_len + stgs.min_dist
+            dist_time = int(dist / stgs.car_speed)
+            if abs(time - timing_b) < dist_time:
+                timing = timing_b + dist_time
+                timing = timing + 1 if ID < ID_b else timing
+
+                return (ID, 0, timing)
+
+    return None
 
 
 # ____________________________________

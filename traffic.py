@@ -214,7 +214,7 @@ class Road:
         u_s = 0 if node1[0] != node2[0] else 1
         length = abs(node1[u_s] - node2[u_s]) - stgs.node_width
 
-        return int(length / (stgs.car_len + stgs.car_len * 0.28))
+        return int(length / (stgs.car_len + stgs.min_dist))
 
     def is_full(self):
         return len(self.cars) >= self.max_capacity

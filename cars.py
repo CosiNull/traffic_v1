@@ -303,14 +303,11 @@ class Car:
                 self.gas = 0
                 self.goal = 0
 
-                print(fut.timing_paths[self.id][-1], stgs.time)
+                timing = fut.timing_paths[self.id][-1]
+                if timing != stgs.time:
+                    print(timing, stgs.time)
                 fut.reset_path(self.id)
                 # self.c = 1
-
-                # Remove the car from the road
-                my_dir = pf.angle_to_dir[self.angle]
-                junc = self.start_nodes[0]
-                trf.roads[(junc, my_dir)].remove_car(self)
 
                 """
                 # Road Exit
@@ -394,9 +391,13 @@ class Car:
                 # print(fut.timing_paths[25][self.c], stgs.time)
                 # print(fut.paths[25][self.c], self.pos)
                 # self.c += 1
+                # if self.id == 10 or self.id == 13:
+                #     print(fut.timing_paths[self.id], stgs.time)
             else:
-                # Special parking case
-                pass
+                # Remove the car from the road
+                my_dir = pf.angle_to_dir[self.angle]
+                junc = self.start_nodes[0]
+                trf.roads[(junc, my_dir)].remove_car(self)
 
         else:
             my_dir = pf.angle_to_dir[self.angle]
@@ -410,11 +411,12 @@ class Car:
                 car2 = current_road.cars[car_index - 1]
                 dont_move = (
                     current_road.car_dist(car1, car2)
-                    < (car1.len / 2 + car2.len / 2) + parking.min_park_dist
+                    <= stgs.car_len + parking.min_park_dist
                 )
 
             if not dont_move:
                 self.move_forward(self.speed)
+
             """
             else:
                 # Not necessary for now but it is good to keep
@@ -557,7 +559,7 @@ class Car:
             junc = self.last_intersection
             ind = fut.linear_search(self.id, fut.junctions[junc].crossing_enter)
             timing = fut.junctions[junc].crossing_enter[ind][1]
-            if timing != stgs.time:
+            if timing != stgs.time:  # 46 problems
                 global yo
                 yo += 1
                 print("_______________________________")
@@ -606,6 +608,8 @@ class Car:
         # Crossing remove
         # print(fut.paths[25][self.c], self.pos)
         # self.c += 1
+        # if self.id == 10 or self.id == 13:
+        #     print(fut.timing_paths[self.id], stgs.time)
 
     @property
     def points(self):
@@ -631,7 +635,7 @@ class Car:
 
 # Parked______________________________________________________________________________
 class Parking_Lot:
-    min_park_dist = stgs.car_len * 0.3
+    min_park_dist = stgs.min_dist
     dist_from_road = stgs.node_width / 2
 
     def __init__(self):
