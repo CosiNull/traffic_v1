@@ -401,11 +401,11 @@ def predict_path():
         elif action == "p":
             # If the road is clean
             # Else repredict by seeing when other car exits road
-            add_car_path(ID, pos, time)
+            add_car_path(ID, pos, time + 32 + 1)
 
             # Register exit
             road = roads[(true_paths[ID][-2][0], dir_paths[ID][-1])]
-            road.add_car_exit(ID, time - 32 - 1)
+            road.add_car_exit(ID, time)
 
             preds[ID] = None
 
@@ -502,7 +502,7 @@ def predict_park(ID):
     time_delay = 1
     time_extra = Road.estimate_arrive(time, dist)
 
-    time_arrive = time_extra + time_delay + park_delay
+    time_arrive = time_extra  # + time_delay + park_delay
 
     return (ID, goal, time_arrive)
 
@@ -529,13 +529,14 @@ def predict_junc_crossable(ID, time, preds):
     for ID_2, time_, entry, entry_to in arr:
         if not (entry, entry_to) in trf.no_conflicts[(m_e, m_e_t)]:
             timing = time_ if ID > ID_2 else time_ + 1
-            return (ID, 0, timing)
+            break
 
     # 1. Get road
     # 2. Get capacity
     # 3. If too full: get free flowing cars, or first in line
     # 4. Get the soonest exit
     road = roads[(true_paths[ID][count][0], m_e_t)]
+
     if road.curr_capacity == road.max_capacity:
         base = -1
         i = base
@@ -546,16 +547,17 @@ def predict_junc_crossable(ID, time, preds):
             i = base - j
             ID_b = road.estimation[i][0]
             count_b = len(paths[ID_b])
-            action_b = true_paths[ID_b][count_b][1]
             if count_b == len(true_paths[ID_b]):
                 base -= 1
                 continue
+            action_b = true_paths[ID_b][count_b][1]
             if j == road.max_capacity - 1:
                 best = min(preds[ID_b], best)
                 best = best + 1 if action_b == "i" else best
                 break
             elif action_b == "p":
                 best = min(preds[ID_b], best)
+
             j += 1
         timing = best if ID > ID_b else best + 1
 
@@ -595,7 +597,7 @@ def predict_car_in_front(ID, preds, time):
     if junction_b == junction:
         dist = stgs.car_len + stgs.min_dist
         timing = preds[ID_b] + int(dist / stgs.car_speed)
-        # timing = timing + 1 if action_b == "i" and ID < ID_b else timing
+        timing = timing + 1 if action_b == "i" and ID < ID_b else timing
         timing = (
             timing - 1 if ID > ID_b else timing
         )  # Special technicality with update order

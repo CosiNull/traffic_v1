@@ -391,8 +391,8 @@ class Car:
                 # print(fut.timing_paths[25][self.c], stgs.time)
                 # print(fut.paths[25][self.c], self.pos)
                 # self.c += 1
-            # if self.id == 91 or self.id == 88:
-            #     print("a", fut.timing_paths[self.id], stgs.time)
+                # if self.id == 94:
+                #     print("a", fut.timing_paths[self.id], stgs.time)
             else:
                 # Remove the car from the road
                 my_dir = pf.angle_to_dir[self.angle]
@@ -536,7 +536,6 @@ class Car:
         if (
             crossable  # Crossing
             and not trf.roads[(self.last_intersection, next_dir)].is_full()
-            # and junction_data.queue_front[0] == self.id
         ):
 
             # Remove from junction data structure
@@ -609,7 +608,7 @@ class Car:
         # Crossing remove
         # print(fut.paths[25][self.c], self.pos)
         # self.c += 1
-        # if self.id == 91:
+        # if self.id == 94:
         #     print("i", fut.timing_paths[self.id], stgs.time)
 
     @property
