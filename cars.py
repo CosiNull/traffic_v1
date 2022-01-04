@@ -391,8 +391,8 @@ class Car:
                 # print(fut.timing_paths[25][self.c], stgs.time)
                 # print(fut.paths[25][self.c], self.pos)
                 # self.c += 1
-                # if self.id == 10 or self.id == 13:
-                #     print(fut.timing_paths[self.id], stgs.time)
+            # if self.id == 91 or self.id == 88:
+            #     print("a", fut.timing_paths[self.id], stgs.time)
             else:
                 # Remove the car from the road
                 my_dir = pf.angle_to_dir[self.angle]
@@ -532,6 +532,7 @@ class Car:
                 for ID, start, to in junction_data.crossing
             ]
         )
+
         if (
             crossable  # Crossing
             and not trf.roads[(self.last_intersection, next_dir)].is_full()
@@ -608,8 +609,8 @@ class Car:
         # Crossing remove
         # print(fut.paths[25][self.c], self.pos)
         # self.c += 1
-        # if self.id == 10 or self.id == 13:
-        #     print(fut.timing_paths[self.id], stgs.time)
+        # if self.id == 91:
+        #     print("i", fut.timing_paths[self.id], stgs.time)
 
     @property
     def points(self):

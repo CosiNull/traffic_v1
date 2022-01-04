@@ -120,6 +120,7 @@ class Road:
         self.line = [(0, 0)]  # (id_last_car, length,Time)
 
         self.max_capacity = trf.Road.max_capacity(node1, node2)
+        self.curr_capacity = 0
         self.start = node1
         self.to = node2
 
@@ -129,6 +130,7 @@ class Road:
         func = lambda x: x[1]
 
         binary_insertion(elem, arr, func)
+        self.curr_capacity += 1
 
     def add_car_junc_estimation(self, ID, time, dist):
         timing = Road.estimate_arrive(time, dist)
@@ -144,6 +146,7 @@ class Road:
         func = lambda x: x[1]
 
         binary_insertion(elem, arr, func)
+        self.curr_capacity -= 1
 
     def add_line(self, id_last_car, time, length):
         self.line.append(id_last_car, time, length)
@@ -338,10 +341,11 @@ def predict_path():
             # If there are no cars still at intersection execute the following
             # Else: Repredict when it will arrive at the intersection
             car_in_front = predict_car_in_front(ID, preds, time)
+            # road = get_entry_road(junction, dir_paths[ID][len(paths[ID]) - 1])
 
             if car_in_front == None:  # if no one is there
                 add_car_path(ID, pos, time)
-                pred = predict_junc_crossable(ID, time + 1)
+                pred = predict_junc_crossable(ID, time + 1, preds)
                 binary_insert_q(pred, queue)
 
                 preds[ID] = pred[2]
@@ -350,12 +354,13 @@ def predict_path():
                 intersect = junctions[junction]
                 entry = trf.inverse_dir[dir_paths[ID][len(paths[ID]) - 1]]
                 intersect.add_car_entry(ID, entry, time)
+
             else:
                 binary_insert_q(car_in_front, queue)
                 preds[ID] = car_in_front[2]
 
         elif action == "l" or action == "r" or action == "u":
-            crossable_pred = predict_junc_crossable(ID, time)
+            crossable_pred = predict_junc_crossable(ID, time, preds)
             if crossable_pred[2] == time:  # Let's cross
                 # Predicting next cross
                 finish_cross = predict_turn(ID, time)
@@ -400,7 +405,7 @@ def predict_path():
 
             # Register exit
             road = roads[(true_paths[ID][-2][0], dir_paths[ID][-1])]
-            road.add_car_exit(ID, time)
+            road.add_car_exit(ID, time - 32 - 1)
 
             preds[ID] = None
 
@@ -502,7 +507,7 @@ def predict_park(ID):
     return (ID, goal, time_arrive)
 
 
-def predict_junc_crossable(ID, time):
+def predict_junc_crossable(ID, time, preds):
     count = len(paths[ID])
     timing = time
 
@@ -511,8 +516,6 @@ def predict_junc_crossable(ID, time):
     # 2. Check from biggest time to smallest
     # 2.1 IF biggest, crossable, go down ELSE Biggest would be new threashold
     # 2.2 When decide threshold CONSIDER ORDER with ID
-
-    # NOTE We are not taking into account if next road is full in future
 
     junc = junctions[true_paths[ID][count][0]]
     ind = binary_search_ds(time, junc.crossing_exit)
@@ -526,12 +529,41 @@ def predict_junc_crossable(ID, time):
     for ID_2, time_, entry, entry_to in arr:
         if not (entry, entry_to) in trf.no_conflicts[(m_e, m_e_t)]:
             timing = time_ if ID > ID_2 else time_ + 1
-            break
+            return (ID, 0, timing)
+
+    # 1. Get road
+    # 2. Get capacity
+    # 3. If too full: get free flowing cars, or first in line
+    # 4. Get the soonest exit
+    road = roads[(true_paths[ID][count][0], m_e_t)]
+    if road.curr_capacity == road.max_capacity:
+        base = -1
+        i = base
+        j = 0
+
+        best = math.inf
+        while j < road.max_capacity:
+            i = base - j
+            ID_b = road.estimation[i][0]
+            count_b = len(paths[ID_b])
+            action_b = true_paths[ID_b][count_b][1]
+            if count_b == len(true_paths[ID_b]):
+                base -= 1
+                continue
+            if j == road.max_capacity - 1:
+                best = min(preds[ID_b], best)
+                best = best + 1 if action_b == "i" else best
+                break
+            elif action_b == "p":
+                best = min(preds[ID_b], best)
+            j += 1
+        timing = best if ID > ID_b else best + 1
 
     return (ID, 0, timing)
 
 
 def predict_car_in_front(ID, preds, time):
+    # NOTE: Does not take into account when car before is at park phase
 
     # 1. Check who has estimate just before you
     # 1.1 Linear search backwards
@@ -560,8 +592,6 @@ def predict_car_in_front(ID, preds, time):
     # Calculating the pred of the car
     junction_b, action_b = true_paths[ID_b][count_b]
 
-    car_leave = None
-
     if junction_b == junction:
         dist = stgs.car_len + stgs.min_dist
         timing = preds[ID_b] + int(dist / stgs.car_speed)
@@ -576,7 +606,8 @@ def predict_car_in_front(ID, preds, time):
             timing_b = timing_paths[ID_b][count_b - 1] - time_turn[past_act] - 1
             dist = stgs.car_len + stgs.min_dist
             dist_time = int(dist / stgs.car_speed)
-            if abs(time - timing_b) < dist_time:
+            time_diff = abs(time - timing_b)
+            if time_diff < dist_time:
                 timing = timing_b + dist_time
                 timing = timing + 1 if ID < ID_b else timing
 
