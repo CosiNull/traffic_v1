@@ -136,8 +136,6 @@ class Car:
         if self.path == None:
             return
 
-        # Next step path itinerary NOTE\
-
         last_node = self.path[-1]
         before_last_node = self.path[-2]
 
@@ -305,6 +303,7 @@ class Car:
 
                 timing = fut.timing_paths[self.id][-1]
                 if timing != stgs.time:
+                    print(self.id, self.color, fut.true_paths[self.id][-2])
                     print(timing, stgs.time)
                 fut.reset_path(self.id)
                 # self.c = 1
@@ -391,10 +390,10 @@ class Car:
                 # print(fut.timing_paths[25][self.c], stgs.time)
                 # print(fut.paths[25][self.c], self.pos)
                 # self.c += 1
-                # if self.id == 94:
+                # if self.id == 148:
                 #     print("a", fut.timing_paths[self.id], stgs.time)
             else:
-                # Remove the car from the road
+                # Remove the car from the road, it's parking time!
                 my_dir = pf.angle_to_dir[self.angle]
                 junc = self.start_nodes[0]
                 trf.roads[(junc, my_dir)].remove_car(self)
@@ -608,7 +607,7 @@ class Car:
         # Crossing remove
         # print(fut.paths[25][self.c], self.pos)
         # self.c += 1
-        # if self.id == 94:
+        # if self.id == 148:
         #     print("i", fut.timing_paths[self.id], stgs.time)
 
     @property

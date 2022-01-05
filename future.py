@@ -76,7 +76,7 @@ class Intersection:
         time_crossing = time_turn[relative_dir[opposite_dir[entry]][entry_to]]
         elem_2 = (ID, time + time_crossing, entry, entry_to)
         arr_2 = self.crossing_exit
-        binary_insertion(elem_2, arr_2, func)
+        binary_insert_q(elem_2, arr_2, func=func)
 
     def update_intersection(self):
         # Getting the ids to remove
@@ -117,7 +117,8 @@ class Road:
         self.enter = []
         self.estimation = []
         self.leave = []
-        self.line = [(0, 0)]  # (id_last_car, length,Time)
+        # self.line = [(None, 0, 0)]  # (id_last_car, length, Time)
+        # self.visited = set()
 
         self.max_capacity = trf.Road.max_capacity(node1, node2)
         self.curr_capacity = 0
@@ -148,8 +149,13 @@ class Road:
         binary_insertion(elem, arr, func)
         self.curr_capacity -= 1
 
-    def add_line(self, id_last_car, time, length):
-        self.line.append(id_last_car, time, length)
+        # self.visited.remove(ID)
+
+    def add_line(self, id_last_car, time):
+        self.line.append(id_last_car, time, self.line[-1][2] + 1)
+
+    def delete_line(self, time):
+        self.line.append(self.line[-1][0], time, self.line[-1][2] - 1)
 
     def update_road(self):
         # Getting the ids to remove
@@ -357,6 +363,7 @@ def predict_path():
 
             else:
                 binary_insert_q(car_in_front, queue)
+
                 preds[ID] = car_in_front[2]
 
         elif action == "l" or action == "r" or action == "u":
@@ -384,7 +391,6 @@ def predict_path():
                 next_road.add_car_enter(ID, time, dist)
                 next_road.add_car_junc_estimation(ID, time, dist - stgs.car_speed)
 
-                pred = 0
                 if len(paths[ID]) + 1 == len(dir_paths[ID]):
                     pred = predict_park(ID)
                 else:
@@ -401,13 +407,20 @@ def predict_path():
         elif action == "p":
             # If the road is clean
             # Else repredict by seeing when other car exits road
-            add_car_path(ID, pos, time + 32 + 1)
+            line_park = predict_park_line(ID, preds)
 
-            # Register exit
-            road = roads[(true_paths[ID][-2][0], dir_paths[ID][-1])]
-            road.add_car_exit(ID, time)
+            if line_park == None:
+                add_car_path(ID, pos, time + 32 + 1)
 
-            preds[ID] = None
+                # Register exit
+                road = roads[(true_paths[ID][-2][0], dir_paths[ID][-1])]
+                road.add_car_exit(ID, time)
+
+                preds[ID] = None
+            else:
+                binary_insert_q(line_park, queue)
+
+                preds[ID] = line_park[2]
 
 
 def predict_road_entry(ID):
@@ -498,8 +511,6 @@ def predict_park(ID):
     u_s = 0 if curr_dir == "l" or curr_dir == "r" else 1
     dist = abs(goal[u_s] - pos[u_s]) - stgs.park_dist
 
-    park_delay = 32
-    time_delay = 1
     time_extra = Road.estimate_arrive(time, dist)
 
     time_arrive = time_extra  # + time_delay + park_delay
@@ -552,14 +563,19 @@ def predict_junc_crossable(ID, time, preds):
                 continue
             action_b = true_paths[ID_b][count_b][1]
             if j == road.max_capacity - 1:
-                best = min(preds[ID_b], best)
+                if preds[ID_b] < best:
+                    best = preds[ID_b]
+                    best_ID = ID_b
                 best = best + 1 if action_b == "i" else best
                 break
             elif action_b == "p":
-                best = min(preds[ID_b], best)
+                if preds[ID_b] < best:
+                    best = preds[ID_b]
+                    best_ID = ID_b
 
             j += 1
-        timing = best if ID > ID_b else best + 1
+        best = best if ID > best_ID else best + 1
+        timing = max(timing, best)
 
     return (ID, 0, timing)
 
@@ -609,7 +625,7 @@ def predict_car_in_front(ID, preds, time):
             dist = stgs.car_len + stgs.min_dist
             dist_time = int(dist / stgs.car_speed)
             time_diff = abs(time - timing_b)
-            if time_diff < dist_time:
+            if time_diff < dist_time or (time_diff == dist_time and ID < ID_b):
                 timing = timing_b + dist_time
                 timing = timing + 1 if ID < ID_b else timing
 
@@ -618,9 +634,65 @@ def predict_car_in_front(ID, preds, time):
     return None
 
 
+def predict_park_line(ID, preds):
+
+    # 1. Check the current line
+    # 1.1 Check how many cars were before my_car and substract by curr_capacity
+    # 2. See if the line exceeds the goal: Do the substraction math
+    # 3. Calculate how many cars need to move to attain goal
+    # 4. Get N_th earliest
+
+    junction = true_paths[ID][len(paths[ID]) - 1][0]
+    road = roads[(junction, dir_paths[ID][len(paths[ID])])]
+
+    # Step 1.
+    cars_after = 0
+    j = 0
+    while True:
+        i = -1 - j - cars_after
+        ID_b = road.estimation[i][0]
+        if len(paths[ID_b]) == len(true_paths[ID_b]):
+            j += 1
+        elif ID_b == ID:
+            break
+        else:
+            cars_after += 1
+    cars_before = road.curr_capacity - 1 - cars_after
+
+    # Step 2.
+    curr_dir = dir_paths[ID][len(paths[ID])]
+    u_s = 0 if curr_dir in {"r", "l"} else 1
+    tot_car_len = stgs.min_dist + stgs.car_len
+    line_len = cars_before * tot_car_len + stgs.node_width / 2 + stgs.car_len / 2
+    goal_dist = abs(road.to[u_s] - true_paths[ID][-1][0][u_s]) + stgs.park_dist
+
+    if goal_dist >= line_len:
+        return None
+
+    # Step 3.
+    dist_to_travel = line_len - goal_dist
+    cars_to_move = math.ceil(dist_to_travel / tot_car_len)
+
+    # Step 4.
+    res = []
+    examined_cars = 0
+    while examined_cars < cars_before:
+        i -= 1
+        ID_b = road.estimation[i][0]
+        if len(paths[ID_b]) == len(true_paths[ID_b]):
+            continue
+        else:
+            binary_insertion((ID_b, preds[ID_b]), res, lambda x: x[1])
+            examined_cars += 1
+
+    ID_b, time = res[cars_to_move]
+    timing = time + math.ceil(dist_to_travel / stgs.car_speed)
+    timing = timing + 1 if ID < ID_b else timing
+    return (ID, 0, timing)
+
+
 # ____________________________________
-def binary_search_q(elem, arr):
-    func = lambda x: x[2]
+def binary_search_q(elem, arr, func=lambda x: x[2]):
     func_2 = lambda x: x[0]
     start = 0
     end = len(arr)
@@ -640,8 +712,8 @@ def binary_search_q(elem, arr):
     return start
 
 
-def binary_insert_q(elem, arr):
-    arr.insert(binary_search_q(elem, arr), elem)
+def binary_insert_q(elem, arr, func=lambda x: x[2]):
+    arr.insert(binary_search_q(elem, arr, func), elem)
 
 
 # _____________________________________
