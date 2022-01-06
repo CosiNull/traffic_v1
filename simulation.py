@@ -13,8 +13,7 @@ while running:
     rv.draw_cars()
     rv.check_keys()
 
-    if stgs.time > 180:
-        rv.update_cars()
+    rv.update_cars()
 
     """
     if stgs.time % 150 == 149:

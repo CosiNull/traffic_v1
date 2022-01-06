@@ -390,7 +390,7 @@ class Car:
                 # print(fut.timing_paths[25][self.c], stgs.time)
                 # print(fut.paths[25][self.c], self.pos)
                 # self.c += 1
-                # if self.id == 148:
+                # if self.id == 171:
                 #     print("a", fut.timing_paths[self.id], stgs.time)
             else:
                 # Remove the car from the road, it's parking time!
@@ -607,7 +607,7 @@ class Car:
         # Crossing remove
         # print(fut.paths[25][self.c], self.pos)
         # self.c += 1
-        # if self.id == 148:
+        # if self.id == 171:
         #     print("i", fut.timing_paths[self.id], stgs.time)
 
     @property

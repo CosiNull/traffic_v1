@@ -216,5 +216,5 @@ print("Dijsktra Mean: ", sum(res1) / len(res1))
 print("A star Mean: ", sum(res2) / len(res2))
 """
 
-# print(cars[27].color, cars[102].color, cars[104].color)
-# # ,green,cyan,pink
+print(cars[0].color, cars[82].color, cars[46].color)
+# purple, cyan, green
