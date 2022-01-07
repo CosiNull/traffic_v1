@@ -50,7 +50,7 @@ class Car:
         self.intersection_line = False
 
         self.autonomous = autonomous
-        self.c = 0
+        self.c = -1
 
     def set_pos(self, graph, random=True):
         if random:
@@ -113,7 +113,7 @@ class Car:
         self.gas = 0
         self.turn_state = 0
 
-    def find_path(self, goal, func="as"):
+    def find_path(self, goal, cars, func="as"):
         # Set Start Pos
         start = self.start_nodes[1]
         start_dir = pf.angle_to_dir[self.angle]
@@ -207,10 +207,10 @@ class Car:
 
         add_dir(self.path, 0, start_dir)
 
-        self.predict_path()
+        self.predict_path(cars)
 
     # Future predicting_________________________________________________________________________
-    def predict_path(self):
+    def predict_path(self, cars):
         fut.save_true_path(
             self.id,
             self.path,
@@ -218,7 +218,7 @@ class Car:
             self.target_pos,
             pf.angle_to_dir[self.angle],
         )
-        fut.predict_path()
+        fut.predict_path(cars)
 
     # The Holy Update Method_____________________________________________________________
     def update(self):
@@ -227,6 +227,7 @@ class Car:
         if self.state == 0.5:
             my_dir = trf.entry_dir(*self.start_nodes)
             if trf.roads[(self.start_nodes[0], my_dir)].can_out_parking(self):
+                self.c = 0
                 self.state = 1
         elif self.state == 1:  # Exit parking
             self.gas += 1
@@ -315,7 +316,7 @@ class Car:
                     print(timing, stgs.time)
                 fut.reset_path(self.id)
 
-                self.c = 0
+                self.c = -1
                 """
                 # Road Exit
                 ind = fut.binary_search_ds(stgs.time, fut.roads[(junc, my_dir)].leave)
@@ -395,7 +396,11 @@ class Car:
                     print(fut.junctions[junc].entries[from_inter][ind], stgs.time)
                     """
                 self.c += 1
-                # print(fut.timing_paths[0][self.c], stgs.time)
+                # print(
+                #     fut.timing_paths[0],
+                #     stgs.time,
+                #     fut.true_paths[self.id][self.c + 1][1],
+                # )
                 # print(fut.paths[0][self.c], self.pos)
 
                 if self.id == 118:
@@ -612,7 +617,13 @@ class Car:
 
         # Crossing remove
         self.c += 1
-        # print(fut.timing_paths[0][self.c], stgs.time)
+
+        # print(
+        #     fut.timing_paths[0],
+        #     stgs.time,
+        #     fut.true_paths[self.id][self.c + 1][1],
+        # ),
+
         if self.id == 118:
             print("i", fut.timing_paths[self.id], stgs.time)
 

@@ -66,11 +66,12 @@ start_times = [None for i in range(stgs.num_car)]
 
 
 # Path predicting__________________________________________________________________________
-def predict_path():
-    queue = []
-    reset_all_datastructures()
+def predict_path(cars):
+    queue = skip_queue(cars)
+    # reset_all_datastructures()
     preds = [None for i in range(stgs.num_car)]
 
+    """
     # Initilialize in simple way
     for ID in range(stgs.num_car):
         if not start_times[ID] == None:
@@ -78,6 +79,7 @@ def predict_path():
             binary_insert_q(pred, queue)
 
             preds[ID] = pred[2]
+    """
 
     # The Great Loop
     while len(queue) > 0:
@@ -308,21 +310,27 @@ def predict_road_entry(ID, time, preds, next_pos=None):
     timing = get_road_cars_pos(ID, time, preds)
 
     if next_pos == None:  # Exit parking pos code
-        curr_dir = dir_paths[ID][0]
-        u_s = 0 if curr_dir in {"l", "r"} else 1
-        road_angle = 1 if curr_dir == "d" or curr_dir == "r" else -1
-
-        next_pos = list(true_paths[ID][0][0])
-        next_pos[u_s] = round(next_pos[u_s] + stgs.park_dist * road_angle)
-
-        s_s = 1 if u_s == 0 else 0
-        road_ang_s = 1 if curr_dir == "r" or curr_dir == "u" else -1
-
-        next_pos[s_s] = true_paths[ID][1][0][s_s] + stgs.road_center * road_ang_s
-
-        next_pos = tuple(next_pos)
+        next_pos = get_road_entry_pos(ID)
 
     return (ID, next_pos, timing)
+
+
+def get_road_entry_pos(ID):
+    curr_dir = dir_paths[ID][0]
+    u_s = 0 if curr_dir in {"l", "r"} else 1
+
+    road_angle = 1 if curr_dir in {"d", "r"} else -1
+
+    next_pos = list(true_paths[ID][0][0])
+    next_pos[u_s] = round(next_pos[u_s] + stgs.park_dist * road_angle)
+
+    s_s = 1 if u_s == 0 else 0
+    road_ang_s = 1 if curr_dir in {"r", "u"} else -1
+
+    next_pos[s_s] = true_paths[ID][1][0][s_s] + stgs.road_center * road_ang_s
+    next_pos = tuple(next_pos)
+
+    return next_pos
 
 
 def predict_intersection(ID):
@@ -334,8 +342,8 @@ def predict_intersection(ID):
     time = timing_paths[ID][count - 1]
 
     # If road is empty
-    u_s = 0 if curr_dir == "r" or curr_dir == "l" else 1
-    road_ang_u = 1 if curr_dir == "l" or curr_dir == "u" else -1
+    u_s = 0 if curr_dir in {"r", "l"} else 1
+    road_ang_u = 1 if curr_dir in {"l", "u"} else -1
 
     dist_to_travel = (
         abs(intersection[u_s] - pos[u_s]) - stgs.node_width / 2 - stgs.car_len / 2
@@ -618,13 +626,19 @@ def predict_park_line(ID, preds):
 
 
 def reset_all_datastructures():
-    global roads
-    global junctions
     # Reset paths
     for ID in range(stgs.num_car):
         paths[ID] = []
         timing_paths[ID] = []
-    # Reset Road
+
+    # Reset roads
+    reset_datastructures()
+
+
+def reset_datastructures():
+    global roads
+    global junctions
+
     roads = make_road_dict(trf.road_network)
     junctions = make_intersection_dict(trf.road_network)
 
@@ -637,3 +651,40 @@ def get_entry_road(node_to, direc):
             return roads[(neighbour, direc)]
 
     raise Exception("Error in determinating Intersection for road entry")
+
+
+# ________________________________________________________________
+def skip_queue(cars):
+    reset_datastructures()
+    queue = []
+    for car in cars:
+        if car.path != None:
+            pred = predict_curr_car(car)
+            binary_insert_q(pred, queue)
+
+    return queue
+
+
+def get_car_action(ID, c):
+    return true_paths[ID][c + 1][1]
+
+
+def predict_curr_car(car):
+    action = get_car_action(car.id, car.c)
+
+    paths[car.id] = paths[car.id][0 : car.c + 1]
+    timing_paths[car.id] = timing_paths[car.id][0 : car.c + 1]
+
+    if action == "e":
+        return (car.id, get_road_entry_pos(car.id), start_times[car.id])
+    elif action == "i":
+        if car.state <= 1:  # Not exited yet
+            road = get_entry_road(true_paths[car.id][1][0], dir_paths[car.id][1])
+            pos = paths[car.id][-1]
+            time = timing_paths[car.id][-1]
+            dist = road.get_car_dist(pos) - junction_space
+
+            road.add_car_junc_estimation(car.id, time, dist)
+            pred = predict_intersection(car.id)
+
+            return pred

@@ -175,7 +175,7 @@ def update_cars():
                         goal == car.start_nodes[0] or goal == car.start_nodes[1]
                     ):  # The while exists to avoid a strange bug where the cars can't identify the road that it is in
                         goal = pf.rand_node(trf.road_network)
-                    car.find_path(goal)
+                    car.find_path(goal, cars)
             else:
                 car.enter_road()
         else:
