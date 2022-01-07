@@ -637,3 +637,4 @@ def get_entry_road(node_to, direc):
             return roads[(neighbour, direc)]
 
     raise Exception("Error in determinating Intersection for road entry")
+

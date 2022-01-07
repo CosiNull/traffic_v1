@@ -50,6 +50,7 @@ class Car:
         self.intersection_line = False
 
         self.autonomous = autonomous
+        self.c = 0
 
     def set_pos(self, graph, random=True):
         if random:
@@ -313,8 +314,8 @@ class Car:
                     print(self.id, self.color, fut.true_paths[self.id][-2])
                     print(timing, stgs.time)
                 fut.reset_path(self.id)
-                # self.c = 1
 
+                self.c = 0
                 """
                 # Road Exit
                 ind = fut.binary_search_ds(stgs.time, fut.roads[(junc, my_dir)].leave)
@@ -393,10 +394,10 @@ class Car:
                     )
                     print(fut.junctions[junc].entries[from_inter][ind], stgs.time)
                     """
+                self.c += 1
+                print(fut.timing_paths[0][self.c], stgs.time)
+                # print(fut.paths[0][self.c], self.pos)
 
-                # print(fut.timing_paths[25][self.c], stgs.time)
-                # print(fut.paths[25][self.c], self.pos)
-                # self.c += 1
                 if self.id == 118:
                     print("a", fut.timing_paths[self.id], stgs.time)
             else:
@@ -592,8 +593,6 @@ class Car:
             print(fut.roads[(junc, next_dir)].estimation[ind], stgs.time)
             """
 
-    c = 1
-
     def exit_intersection(self):
         self.turn_state = 0
         self.path.pop(0)
@@ -612,8 +611,8 @@ class Car:
         """
 
         # Crossing remove
-        # print(fut.paths[25][self.c], self.pos)
-        # self.c += 1
+        self.c += 1
+        print(fut.timing_paths[0][self.c], stgs.time)
         if self.id == 118:
             print("i", fut.timing_paths[self.id], stgs.time)
 
