@@ -256,10 +256,7 @@ class Road:
         for car in self.cars:
             car_dist = self.get_car_dist(car)
             # check if it is in correct interval
-            if (
-                car_dist <= my_dist
-                and abs(car_dist - my_dist) < 10 + car.len / 2 + my_car.len / 2
-            ):
+            if car_dist <= my_dist and abs(car_dist - my_dist) < 10 + car.len:
                 return False
             elif (
                 car_dist > my_dist

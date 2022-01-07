@@ -42,7 +42,7 @@ class Car:
         self.park_speed = 0.4
 
         self.path = None
-        self.park_time = 0
+        self.park_time = rdn.randint(0, 500)
         self.goal = 0
 
         self.pause = False
@@ -273,6 +273,13 @@ class Car:
 
                 self.center_to_road(False)
 
+                timing = fut.timing_paths[self.id][0]
+                if timing != stgs.time:
+                    print("EXIT______________")
+                    print(self.id, self.color, fut.true_paths[self.id][1])
+                    print(timing, stgs.time)
+                    print("___________________")
+
                 # Add to road dict
                 my_dir = trf.entry_dir(*self.start_nodes)
                 junc = self.start_nodes[0]
@@ -390,8 +397,8 @@ class Car:
                 # print(fut.timing_paths[25][self.c], stgs.time)
                 # print(fut.paths[25][self.c], self.pos)
                 # self.c += 1
-                # if self.id == 171:
-                #     print("a", fut.timing_paths[self.id], stgs.time)
+                if self.id == 118:
+                    print("a", fut.timing_paths[self.id], stgs.time)
             else:
                 # Remove the car from the road, it's parking time!
                 my_dir = pf.angle_to_dir[self.angle]
@@ -537,8 +544,8 @@ class Car:
             and not trf.roads[(self.last_intersection, next_dir)].is_full()
         ):
 
-            # Remove from junction data structure
             self.waiting_intersection = False
+            # Remove from junction data structure
             junction_data.remove_car(*self.junction_id)
             junction_data.crossing.append(
                 (self.junction_id[0], self.junction_id[1], self.road_to)
@@ -558,7 +565,7 @@ class Car:
             junc = self.last_intersection
             ind = fut.linear_search(self.id, fut.junctions[junc].crossing_enter)
             timing = fut.junctions[junc].crossing_enter[ind][1]
-            if timing != stgs.time:  # 46 problems
+            if timing != stgs.time:
                 global yo
                 yo += 1
                 print("_______________________________")
@@ -575,10 +582,10 @@ class Car:
             #  Road_enter and estimation
             """
             junc = self.last_intersection
-            
-            ind = fut.binary_search_ds(stgs.time, fut.roads[(junc, next_dir)].enter)
-            print(fut.roads[(junc, next_dir)].enter[ind], stgs.time)
-            
+
+            # ind = fut.binary_search_ds(stgs.time, fut.roads[(junc, next_dir)].enter)
+            # print(fut.roads[(junc, next_dir)].enter[ind], stgs.time)
+
             ind = fut.binary_search_ds(
                 stgs.time, fut.roads[(junc, next_dir)].estimation
             )
@@ -607,8 +614,8 @@ class Car:
         # Crossing remove
         # print(fut.paths[25][self.c], self.pos)
         # self.c += 1
-        # if self.id == 171:
-        #     print("i", fut.timing_paths[self.id], stgs.time)
+        if self.id == 118:
+            print("i", fut.timing_paths[self.id], stgs.time)
 
     @property
     def points(self):
