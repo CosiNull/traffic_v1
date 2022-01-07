@@ -96,7 +96,7 @@ def predict_path():
                 # Register to road enter
                 road = get_entry_road(true_paths[ID][1][0], dir_paths[ID][1])
                 dist = road.get_car_dist(pos) - junction_space
-                road.add_car_enter(ID, time + 32, dist)
+                # road.add_car_enter(ID, time + 32, dist)
                 road.add_car_junc_estimation(ID, time + 32, dist)
             else:
                 binary_insert_q(pred, queue)
@@ -148,7 +148,7 @@ def predict_path():
                 time_cross = time_turn[action] + 1  # 1 is time delay
                 extra_dist = time_cross * stgs.car_speed - junction_space
                 dist = next_road.get_car_dist(finish_cross[1]) + extra_dist
-                next_road.add_car_enter(ID, time, dist)
+                # next_road.add_car_enter(ID, time, dist)
                 next_road.add_car_junc_estimation(ID, time, dist - stgs.car_speed)
 
                 if len(paths[ID]) + 1 == len(dir_paths[ID]):
@@ -637,4 +637,3 @@ def get_entry_road(node_to, direc):
             return roads[(neighbour, direc)]
 
     raise Exception("Error in determinating Intersection for road entry")
-

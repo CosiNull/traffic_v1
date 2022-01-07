@@ -132,7 +132,6 @@ class Road:
         func = lambda x: x[1]
 
         binary_insertion(elem, arr, func)
-        self.curr_capacity += 1
 
     def add_car_junc_estimation(self, ID, time, dist):
         timing = Road.estimate_arrive(time, dist)
@@ -141,6 +140,7 @@ class Road:
         func = lambda x: x[1]
 
         binary_insertion(elem, arr, func)
+        self.curr_capacity += 1
 
     def add_car_exit(self, ID, time):
         elem = (ID, time)
@@ -295,6 +295,7 @@ def binary_insert_q(elem, arr, func=lambda x: x[2]):
 
 
 # _____________________________________
+
 
 def entry_collision(other_dist, my_dist):
     if other_dist <= my_dist and abs(other_dist - my_dist) < 10 + stgs.car_len:

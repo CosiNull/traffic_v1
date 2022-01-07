@@ -42,7 +42,7 @@ class Car:
         self.park_speed = 0.4
 
         self.path = None
-        self.park_time = rdn.randint(0, 500)
+        self.park_time = 0  # rdn.randint(0, 500)
         self.goal = 0
 
         self.pause = False
@@ -395,7 +395,7 @@ class Car:
                     print(fut.junctions[junc].entries[from_inter][ind], stgs.time)
                     """
                 self.c += 1
-                print(fut.timing_paths[0][self.c], stgs.time)
+                # print(fut.timing_paths[0][self.c], stgs.time)
                 # print(fut.paths[0][self.c], self.pos)
 
                 if self.id == 118:
@@ -612,7 +612,7 @@ class Car:
 
         # Crossing remove
         self.c += 1
-        print(fut.timing_paths[0][self.c], stgs.time)
+        # print(fut.timing_paths[0][self.c], stgs.time)
         if self.id == 118:
             print("i", fut.timing_paths[self.id], stgs.time)
 
