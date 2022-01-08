@@ -42,7 +42,7 @@ class Car:
         self.park_speed = 0.4
 
         self.path = None
-        self.park_time = 0  # rdn.randint(0, 500)
+        self.park_time = rdn.randint(0, 500)
         self.goal = 0
 
         self.pause = False
@@ -218,7 +218,7 @@ class Car:
             self.target_pos,
             pf.angle_to_dir[self.angle],
         )
-        fut.predict_path(cars)
+        fut.predict_path(cars, self.id)
 
     # The Holy Update Method_____________________________________________________________
     def update(self):
@@ -305,7 +305,6 @@ class Car:
                 self.set_pos(trf.road_network, False)
 
                 self.state = 0
-                self.path = None
                 self.park_time = 200
                 self.gas = 0
                 self.goal = 0
@@ -330,6 +329,7 @@ class Car:
         # Move Forward
         if len(self.path) == 0:
             # self.color = (255, 255, 255)
+            self.path = None
             self.state = 3
         elif not type(self.path[0]) == str:
             self.advance_to_dest()
@@ -403,7 +403,7 @@ class Car:
                 # )
                 # print(fut.paths[0][self.c], self.pos)
 
-                if self.id == 118:
+                if self.id == 146:
                     print("a", fut.timing_paths[self.id], stgs.time)
             else:
                 # Remove the car from the road, it's parking time!
@@ -624,7 +624,7 @@ class Car:
         #     fut.true_paths[self.id][self.c + 1][1],
         # ),
 
-        if self.id == 118:
+        if self.id == 146:
             print("i", fut.timing_paths[self.id], stgs.time)
 
     @property

@@ -66,10 +66,9 @@ start_times = [None for i in range(stgs.num_car)]
 
 
 # Path predicting__________________________________________________________________________
-def predict_path(cars):
-    queue = skip_queue(cars)
+def predict_path(cars, subtime):
+    queue, preds = skip_queue(cars, subtime)
     # reset_all_datastructures()
-    preds = [None for i in range(stgs.num_car)]
 
     """
     # Initilialize in simple way
@@ -123,13 +122,13 @@ def predict_path(cars):
 
                 preds[ID] = car_in_front[2]
 
-        elif action == "l" or action == "r" or action == "u":
+        elif action in {"l", "r", "u"}:
             crossable_pred = predict_junc_crossable(ID, time, preds)
             if crossable_pred[2] == time:  # Let's cross
                 # Adding to cross
-                intersect = junctions[junction]
-                entry = trf.inverse_dir[dir_paths[ID][len(paths[ID]) - 1]]
-                intersect.add_car_entry(ID, entry, time)
+                # intersect = junctions[junction]
+                # entry = trf.inverse_dir[dir_paths[ID][len(paths[ID]) - 1]]
+                # intersect.add_car_entry(ID, entry, time)
 
                 # Predicting next cross
                 finish_cross = predict_turn(ID, time)
@@ -220,6 +219,7 @@ def get_road_cars_pos(ID, time, preds):
             ID_ex = ID_b
 
             extra_dist = reLu(tot_car_len - time_elapsed * stgs.car_speed)
+
         break
 
     # ____________________________________________
@@ -271,6 +271,38 @@ def get_road_cars_pos(ID, time, preds):
             else:
                 return time + int(diff_dist / stgs.car_speed)
 
+        line_len -= extra_dist
+        last_car_dist = line_len - stgs.car_len / 2
+        target_dist = my_dist - 10 - stgs.car_len
+
+        dist_to_travel = last_car_dist - target_dist
+        cars_to_move = math.ceil(dist_to_travel / tot_car_len)
+
+        res = []
+        [binary_insertion((elem, preds[elem]), res, lambda x: x[1]) for elem in liners]
+
+        if len(res) == cars_to_move:
+            ID_b, timing_b = res[-1]
+            timing_b = timing_b + 1 if ID < ID_b else timing_b
+            return timing_b
+        else:
+            time_leave = res[cars_to_move - 1][1]
+            dist_bef_leave = (
+                (len(liners) - (cars_to_move - 1)) * tot_car_len
+                - stgs.min_dist
+                + stgs.node_width / 2
+            )
+            time_to_wait = (
+                -(my_dist - 10 - stgs.car_len - dist_bef_leave) / stgs.car_speed
+            )
+            return time_leave + time_to_wait
+
+        """
+        if len(liners) == 1:
+            timing = preds[ID_b]
+            # timing = timing + 1 if ID > ID_b else timing
+            return timing
+
         # See what length is necessary for car out
         diff_dist -= extra_dist
         c = 0
@@ -286,9 +318,12 @@ def get_road_cars_pos(ID, time, preds):
         time_to_wait = math.ceil(almost_final_line - boundary) / stgs.car_speed
         if time_to_wait > 21:
             raise Exception("I'm dying inside")
+       
+
         res = []
         [binary_insertion(elem, res, lambda x: x[1]) for elem in liners]
         return res[c][1] + time_to_wait
+        """
     else:
         # Time for the freeflowers
         best = time
@@ -333,22 +368,16 @@ def get_road_entry_pos(ID):
     return next_pos
 
 
-def predict_intersection(ID):
+def get_intersection_pos(ID):
     count = len(paths[ID])
 
     intersection = true_paths[ID][count][0]
     curr_dir = dir_paths[ID][count]
     pos = paths[ID][count - 1]
-    time = timing_paths[ID][count - 1]
 
     # If road is empty
     u_s = 0 if curr_dir in {"r", "l"} else 1
     road_ang_u = 1 if curr_dir in {"l", "u"} else -1
-
-    dist_to_travel = (
-        abs(intersection[u_s] - pos[u_s]) - stgs.node_width / 2 - stgs.car_len / 2
-    )
-    time_arrive = Road.estimate_arrive(time, dist_to_travel)
 
     s_s = 1 if u_s == 0 else 0
     road_ang_s = 1 if curr_dir == "r" or curr_dir == "u" else -1
@@ -359,7 +388,27 @@ def predict_intersection(ID):
     )
     next_pos[s_s] = intersection[s_s] + stgs.road_center * road_ang_s
 
-    return (ID, tuple(next_pos), time_arrive)
+    return tuple(next_pos)
+
+
+def predict_intersection(ID):
+    count = len(paths[ID])
+
+    intersection = true_paths[ID][count][0]
+    curr_dir = dir_paths[ID][count]
+    pos = paths[ID][count - 1]
+    time = timing_paths[ID][count - 1]
+
+    # If road is empty
+    u_s = 0 if curr_dir in {"r", "l"} else 1
+
+    dist_to_travel = (
+        abs(intersection[u_s] - pos[u_s]) - stgs.node_width / 2 - stgs.car_len / 2
+    )
+    time_arrive = Road.estimate_arrive(time, dist_to_travel)
+
+    next_pos = get_intersection_pos(ID)
+    return (ID, next_pos, time_arrive)
 
 
 def predict_turn(ID, time):
@@ -553,7 +602,7 @@ def predict_park_line(ID, preds):
     j = 0
     while True:
         i = -1 - j - cars_after
-        ID_b = road.estimation[i][0]
+        ID_b = road.estimation[i][0]  # NOTE THERE
         if len(paths[ID_b]) == len(true_paths[ID_b]):
             j += 1
         elif ID_b == ID:
@@ -654,37 +703,128 @@ def get_entry_road(node_to, direc):
 
 
 # ________________________________________________________________
-def skip_queue(cars):
+def skip_queue(cars, subtime):
     reset_datastructures()
     queue = []
+    preds = [None for i in range(stgs.num_car)]
     for car in cars:
         if car.path != None:
-            pred = predict_curr_car(car)
+            pred = predict_curr_car(car, subtime)
             binary_insert_q(pred, queue)
 
-    return queue
+            preds[car.id] = pred[2]
+
+    return (queue, preds)
 
 
 def get_car_action(ID, c):
     return true_paths[ID][c + 1][1]
 
 
-def predict_curr_car(car):
+def predict_curr_car(car, subtime):
     action = get_car_action(car.id, car.c)
 
-    paths[car.id] = paths[car.id][0 : car.c + 1]
-    timing_paths[car.id] = timing_paths[car.id][0 : car.c + 1]
-
     if action == "e":
+        paths[car.id] = paths[car.id][0 : car.c + 1]
+        timing_paths[car.id] = timing_paths[car.id][0 : car.c + 1]
+
         return (car.id, get_road_entry_pos(car.id), start_times[car.id])
     elif action == "i":
+        paths[car.id] = paths[car.id][0 : car.c + 1]
+        timing_paths[car.id] = timing_paths[car.id][0 : car.c + 1]
+
+        road = get_entry_road(
+            true_paths[car.id][car.c + 1][0], dir_paths[car.id][car.c + 1]
+        )
+        entry_pos = paths[car.id][-1]
+        time = timing_paths[car.id][-1]
+        dist = road.get_car_dist(entry_pos) - junction_space
+        road.add_car_junc_estimation(car.id, time, dist)
+
         if car.state <= 1:  # Not exited yet
-            road = get_entry_road(true_paths[car.id][1][0], dir_paths[car.id][1])
-            pos = paths[car.id][-1]
-            time = timing_paths[car.id][-1]
-            dist = road.get_car_dist(pos) - junction_space
+            return predict_intersection(car.id)
+
+        curr_dist = road.get_car_dist(car.pos) - junction_space
+        curr_dist = curr_dist if car.id < subtime else curr_dist - stgs.car_speed
+        time_arrive = Road.estimate_arrive(stgs.time, curr_dist)
+
+        return (car.id, get_intersection_pos(car.id), time_arrive)
+
+    elif action in {"l", "r", "u"}:
+        road = get_entry_road(true_paths[car.id][car.c][0], dir_paths[car.id][car.c])
+
+        if car.waiting_intersection:  # Still waiting #NOTE ID MAY PLAY A ROLE HERE
+            paths[car.id] = paths[car.id][0 : car.c + 1]
+            timing_paths[car.id] = timing_paths[car.id][0 : car.c + 1]
+
+            entry_pos = paths[car.id][-2]
+            time = timing_paths[car.id][-2]
+            dist = road.get_car_dist(entry_pos) - junction_space
 
             road.add_car_junc_estimation(car.id, time, dist)
-            pred = predict_intersection(car.id)
+            time_arrive = timing_paths[car.id][-1]
 
-            return pred
+            timing = time_arrive + 1 if stgs.time == time_arrive else stgs.time
+            return (car.id, 2, timing)
+
+        # If not waiting
+        paths[car.id] = paths[car.id][0 : car.c + 2]
+        timing_paths[car.id] = timing_paths[car.id][0 : car.c + 2]
+
+        # Not neglecting old road to add estimation and delete -1 capacity
+        old_time = timing_paths[car.id][-3]
+        old_pos = paths[car.id][-3]
+        old_dist = road.get_car_dist(old_pos) - junction_space
+        road.add_car_junc_estimation(car.id, old_time, old_dist)
+        road.curr_capacity -= 1
+
+        next_road = roads[true_paths[car.id][car.c][0], dir_paths[car.id][car.c + 2]]
+
+        time_departed = timing_paths[car.id][-1] - time_turn[action]
+        junc = true_paths[car.id][car.c][0]
+
+        entry_pos = paths[car.id][-1]
+        time = timing_paths[car.id][-1]
+        dist = next_road.get_car_dist(entry_pos) - junction_space
+        next_road.add_car_junc_estimation(car.id, time, dist)
+
+        entry = trf.inverse_dir[dir_paths[car.id][car.c]]
+        entry_to = dir_paths[car.id][car.c + 2]
+
+        junctions[junc].add_car_crossing(car.id, time_departed, entry, entry_to)
+
+        next_action = get_car_action(car.id, car.c + 1)
+        if next_action == "i":
+            time_arrive = Road.estimate_arrive(time, dist)
+            return (car.id, 3, time_arrive)
+        else:
+            return predict_park(car.id)
+
+    elif action == "p":
+        paths[car.id] = paths[car.id][0 : car.c + 1]
+        timing_paths[car.id] = timing_paths[car.id][0 : car.c + 1]
+
+        # Enter estimation here
+        road = roads[true_paths[car.id][car.c][0], dir_paths[car.id][-1]]
+        entry_pos = paths[car.id][-1]
+        time = timing_paths[car.id][-1]
+        dist = road.get_car_dist(entry_pos) - junction_space
+
+        road.add_car_junc_estimation(car.id, time, dist)
+
+        # Prediction
+        pos = car.pos
+        goal_pos = true_paths[car.id][-1][0]
+        u_s = 0 if road.start[0] != road.to[0] else 1
+
+        dist = abs(goal_pos[u_s] - pos[u_s]) - stgs.park_dist
+        dist = dist if car.id < subtime else dist - stgs.car_speed
+
+        time_arrive = Road.estimate_arrive(stgs.time, dist)
+
+        if car.id == 58:
+            print(abs(goal_pos[u_s] - pos[u_s]))
+            dist2 = abs(goal_pos[u_s] - entry_pos[u_s]) - stgs.park_dist
+            print(time_arrive, Road.estimate_arrive(time, dist2))
+
+        return (car.id, 4, time_arrive)

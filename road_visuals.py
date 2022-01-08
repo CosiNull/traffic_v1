@@ -109,7 +109,7 @@ def draw_node(node=tuple[float, float]):
     n_w = round(stgs.node_width * stgs.scale_factor)
     x, y = adjust_pos(node, True)
     color = (10, 10, 10)
-    if node == (1100, 232):
+    if node == (1308, 648):
         color = (200, 0, 0)
     if in_screen((x, y)):
         pg.draw.rect(screen, color, pg.Rect(x, y, n_w, n_w))
