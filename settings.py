@@ -1,6 +1,6 @@
 # Files
 road_file = "test3.pickle"
-seed = 123456
+seed = 908
 # 75374827393
 
 # PArking error: 93438333, num_cars: 123
@@ -31,7 +31,7 @@ adjust_y = 700  # move_y
 road_len = 52
 
 # Cars
-num_car = 200  # 123
+num_car = 250  # 123
 car_len = 8
 car_speed = 0.5
 min_dist = car_len * 0.3125

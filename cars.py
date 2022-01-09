@@ -229,6 +229,7 @@ class Car:
             if trf.roads[(self.start_nodes[0], my_dir)].can_out_parking(self):
                 self.c = 0
                 self.state = 1
+
         elif self.state == 1:  # Exit parking
             self.gas += 1
             self.park(exit=True)
@@ -403,8 +404,8 @@ class Car:
                 # )
                 # print(fut.paths[0][self.c], self.pos)
 
-                if self.id == 146:
-                    print("a", fut.timing_paths[self.id], stgs.time)
+                # if self.id == 54:
+                #     print("a", fut.timing_paths[self.id], stgs.time)
             else:
                 # Remove the car from the road, it's parking time!
                 my_dir = pf.angle_to_dir[self.angle]
@@ -624,8 +625,8 @@ class Car:
         #     fut.true_paths[self.id][self.c + 1][1],
         # ),
 
-        if self.id == 146:
-            print("i", fut.timing_paths[self.id], stgs.time)
+        # if self.id == 54:
+        #     print("i", fut.timing_paths[self.id], stgs.time)
 
     @property
     def points(self):
