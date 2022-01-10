@@ -1,6 +1,6 @@
 # Files
 road_file = "test3.pickle"
-seed = 78432
+seed = 4303
 # 75374827393
 
 # PArking error: 93438333, num_cars: 123

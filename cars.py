@@ -300,6 +300,9 @@ class Car:
 
                 # print(fut.timing_paths[0][0], stgs.time)
                 # print(fut.paths[0][0], self.pos)
+                if fut.timing_paths[self.id][self.c] != stgs.time:
+                    fut.timing_paths[self.id][self.c] = stgs.time
+                    print("Error cocorrection")
 
             else:
                 self.set_pos(trf.road_network, False)
@@ -323,7 +326,7 @@ class Car:
                 """
 
                 # Can out this in the future
-                self.pause = True
+                # self.pause = True
 
     def move_to_dest(self):
         # Move Forward
@@ -396,11 +399,10 @@ class Car:
                     print(fut.junctions[junc].entries[from_inter][ind], stgs.time)
                     """
                 self.c += 1
-                # print(
-                #     fut.timing_paths[0],
-                #     stgs.time,
-                #     fut.true_paths[self.id][self.c + 1][1],
-                # )
+                if fut.timing_paths[self.id][self.c] != stgs.time:
+                    fut.timing_paths[self.id][self.c] = stgs.time
+                    print("Error cocorrection")
+
                 # print(fut.paths[0][self.c], self.pos)
 
                 # if self.id == 22:
@@ -422,8 +424,7 @@ class Car:
                 car1 = current_road.cars[car_index]
                 car2 = current_road.cars[car_index - 1]
                 dont_move = (
-                    current_road.car_dist(car1, car2)
-                    <= stgs.car_len + parking.min_park_dist
+                    current_road.car_dist(car1, car2) <= stgs.car_len + stgs.min_dist
                 )
 
             if not dont_move:
@@ -617,6 +618,9 @@ class Car:
 
         # Crossing remove
         self.c += 1
+        if fut.timing_paths[self.id][self.c] != stgs.time:
+            fut.timing_paths[self.id][self.c] = stgs.time
+            print("Error cocorrection")
 
         # print(
         #     fut.timing_paths[0],
@@ -651,7 +655,7 @@ class Car:
 
 # Parked______________________________________________________________________________
 class Parking_Lot:
-    min_park_dist = stgs.min_dist
+    min_park_dist = stgs.min_dist * 1.5
     dist_from_road = stgs.node_width / 2
 
     def __init__(self):

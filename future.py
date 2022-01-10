@@ -205,28 +205,10 @@ def get_road_cars_pos(ID, time, preds):
         j += 1
     car_order.reverse()
 
-    # 2. See when next car departs to get extra tiny line
-    extra_dist = 0
-    ID_ex = -1
-    while abs(i) < len(road.estimation):
-        i -= 1
-        ID_b = road.estimation[i][0]
-        count_b = len(paths[ID_b])
-        if count_b == len(true_paths[ID_b]):
-            continue
-        past_junc, past_act = true_paths[ID_b][count_b - 1]
-        if past_junc == road.to and past_act != "i":
-            timing_b = timing_paths[ID_b][count_b - 1] - time_turn[past_act] - 1
-            time_elapsed = time - timing_b
-            ID_ex = ID_b
-            extra_dist = reLu(tot_car_len - time_elapsed * stgs.car_speed)
-
-        break
-
     # ____________________________________________
 
     # THE HOLY LOOP
-    line_len = stgs.node_width / 2 + extra_dist
+    line_len = stgs.node_width / 2
     liners = []
     flowing = []
 
@@ -266,14 +248,29 @@ def get_road_cars_pos(ID, time, preds):
             elif dist > goal_dist:
                 flowing.append((ID_b, dist))
 
+    # 2. See when next car departs to get extra tiny line
+    extra_dist = 0
+    while abs(i) < len(road.estimation):
+        i -= 1
+        ID_b = road.estimation[i][0]
+        count_b = len(paths[ID_b])
+        if count_b == len(true_paths[ID_b]):
+            continue
+        past_junc, past_act = true_paths[ID_b][count_b - 1]
+        if past_junc == road.to and past_act != "i":
+            timing_b = timing_paths[ID_b][count_b - 1] - time_turn[past_act] - 1
+            time_elapsed = time - timing_b
+            extra_dist = reLu(tot_car_len - time_elapsed * stgs.car_speed)
+
+        break
+
+    line_len += extra_dist
     # NOW CHECK LINERS
     boundary = my_dist - 10 - stgs.car_len
     line_len -= stgs.min_dist + stgs.car_len / 2
     if len(liners) == 0:
         line_len = 0
     #
-    # if ID == 86:
-    #     print(liners, flowing, boundary, line_len, time, extra_dist)
 
     if line_len > boundary:  # Normally >
         # Special case scenario
@@ -314,13 +311,8 @@ def get_road_cars_pos(ID, time, preds):
                 ID_prev = res[i - 1]
                 if ID_prev > ID_1:
                     time_to_wait += 1
-            if ID == 86:
-                print(time_leave, time_to_wait)
 
             return time_leave + time_to_wait
-
-    # if ID == 122:
-    #     print("no")
 
     return calculate_flowing(flowing, time, my_dist, ID, preds)
 
@@ -330,7 +322,7 @@ def calculate_flowing(flowing, time, my_dist, ID, preds):
     best = time
     for ID_b, other_dist in flowing:
         # check if it is in correct interval
-        collision = entry_collision(other_dist, my_dist, ID, ID_b)
+        collision = entry_collision(other_dist, my_dist)
         if collision:
             time_to_wait = -(my_dist - 10 - stgs.car_len - other_dist) / stgs.car_speed
             time_to_wait = time_to_wait + 1 if ID < ID_b else time_to_wait
