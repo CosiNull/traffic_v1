@@ -233,27 +233,16 @@ def get_road_cars_pos(ID, time, preds):
     for ID_b, estimation in car_order:
         count = len(paths[ID_b])
         action = true_paths[ID_b][count][1]
-        # if preds[ID_b] != estimation and action != "p":
-        #     # Add to line
-        #     if ID == 87 and ID_b == 54:
-        #         print("jello")
-        #         dist = road.get_car_dist(paths[ID_b][-1])
-        #         time_arrived = timing_paths[ID_b][-1]
-        #         time_elapsed = time - time_arrived
-        #         dist -= time_elapsed * stgs.car_speed
-        #         print(dist)
-        #     liners.append(ID_b)
-        #     line_len += stgs.min_dist + stgs.car_len
-        if action != "p":
+        if preds[ID_b] != estimation and action != "p":
+            # Add to line
+            liners.append(ID_b)
+            line_len += stgs.min_dist + stgs.car_len
+        elif action != "p":
             dist = road.get_car_dist(paths[ID_b][-1])
             time_arrived = timing_paths[ID_b][-1]
 
             # IF GUY IS IN ITS ENTERING PARKING PROCESS SKIP
-            if (
-                len(paths[ID_b]) == 1
-                and time_arrived - 32 < stgs.time
-                and dist + stgs.park_dist < my_dist
-            ):
+            if len(paths[ID_b]) == 1 and time_arrived >= time:
                 continue
 
             time_elapsed = time - time_arrived
@@ -278,23 +267,23 @@ def get_road_cars_pos(ID, time, preds):
                 flowing.append((ID_b, dist))
 
     # NOW CHECK LINERS
-    boundary = my_dist - 10
-    
+    boundary = my_dist - 10 - stgs.car_len
+    line_len -= stgs.min_dist + stgs.car_len / 2
+    if len(liners) == 0:
+        line_len = 0
     #
+    # if ID == 86:
+    #     print(liners, flowing, boundary, line_len, time, extra_dist)
+
     if line_len > boundary:  # Normally >
         # Special case scenario
         diff_dist = line_len - boundary
         if diff_dist < extra_dist:
-            if len(liners) == 0:
-                timing_b = timing_b + 1 if ID < ID_ex else timing_b
-                return max(
-                    timing_b + 1, calculate_flowing(flowing, time, my_dist, ID, preds)
-                )
-            else:
-                return time + int(diff_dist / stgs.car_speed)
-
+            my_time = time + int(diff_dist / stgs.car_speed)
+            return my_time
         line_len -= extra_dist
-        last_car_dist = line_len - stgs.car_len / 2 - stgs.min_dist
+
+        last_car_dist = line_len
         target_dist = my_dist - 10 - stgs.car_len
 
         dist_to_travel = last_car_dist - target_dist
@@ -310,44 +299,28 @@ def get_road_cars_pos(ID, time, preds):
         else:
             time_leave = res[cars_to_move - 1][1]
             dist_bef_leave = (
-                (len(liners) - (cars_to_move - 1)) * tot_car_len
+                (len(liners) - cars_to_move + 1) * tot_car_len
                 - stgs.min_dist
                 + stgs.node_width / 2
+                - stgs.car_len / 2
             )
             time_to_wait = (
                 -(my_dist - 10 - stgs.car_len - dist_bef_leave) / stgs.car_speed
             )
             # Put preds if time_to_wait exceeds
+            # Delay
+            for i in range(cars_to_move, len(res)):
+                ID_1 = res[i]
+                ID_prev = res[i - 1]
+                if ID_prev > ID_1:
+                    time_to_wait += 1
+            if ID == 86:
+                print(time_leave, time_to_wait)
 
             return time_leave + time_to_wait
 
-        """
-        if len(liners) == 1:
-            timing = preds[ID_b]
-            # timing = timing + 1 if ID > ID_b else timing
-            return timing
-
-        # See what length is necessary for car out
-        diff_dist -= extra_dist
-        c = 0
-        while diff_dist > 0:
-            diff_dist -= stgs.car_len
-            c += 1
-            if diff_dist <= 0:
-                break
-            else:
-                diff_dist -= stgs.min_dist
-        num_cars = len(liners) - (c - 1)
-        almost_final_line = num_cars * tot_car_len - stgs.min_dist + stgs.node_width / 2
-        time_to_wait = math.ceil(almost_final_line - boundary) / stgs.car_speed
-        if time_to_wait > 21:
-            raise Exception("I'm dying inside")
-       
-
-        res = []
-        [binary_insertion(elem, res, lambda x: x[1]) for elem in liners]
-        return res[c][1] + time_to_wait
-        """
+    # if ID == 122:
+    #     print("no")
 
     return calculate_flowing(flowing, time, my_dist, ID, preds)
 
@@ -362,7 +335,7 @@ def calculate_flowing(flowing, time, my_dist, ID, preds):
             time_to_wait = -(my_dist - 10 - stgs.car_len - other_dist) / stgs.car_speed
             time_to_wait = time_to_wait + 1 if ID < ID_b else time_to_wait
             if -time_to_wait * stgs.car_speed + other_dist <= junction_space:
-                best = max(best, preds[ID_b] + 1)
+                best = max(best, preds[ID_b])
             else:
                 best = max(best, time + time_to_wait)
         elif my_dist - other_dist == stgs.car_len + 10 and ID < ID_b:
@@ -500,6 +473,7 @@ def predict_junc_crossable(ID, time, preds):
     m_e_t = dir_paths[ID][len(paths[ID]) + 1]
 
     arr = junc.crossing_exit[ind:]
+
     arr.reverse()
 
     for ID_2, time_, entry, entry_to in arr:

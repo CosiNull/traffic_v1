@@ -254,6 +254,8 @@ class Road:
         my_dist = self.get_car_dist(my_car)
 
         for car in self.cars:
+            if car.state <= 1:
+                continue
             car_dist = self.get_car_dist(car)
             # check if it is in correct interval
             if car_dist <= my_dist and abs(car_dist - my_dist) < 10 + car.len:

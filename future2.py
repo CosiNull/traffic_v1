@@ -139,7 +139,7 @@ class Road:
         arr = self.estimation
         func = lambda x: x[1]
 
-        binary_insertion(elem, arr, func)
+        binary_insert_q(elem, arr, func=func)
         self.curr_capacity += 1
 
     def add_car_exit(self, ID, time):
