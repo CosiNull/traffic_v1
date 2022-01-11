@@ -26,7 +26,7 @@ class Graph:
                 self.connections[node] = list()
                 self.node_data[node] = Node(node[0], node[1])
 
-    def add_directed_edge(self, start: tuple[float, float], to: tuple[float, float]):
+    def add_directed_edge(self, start: tuple, to: tuple):
         distance = ((start[0] - to[0]) ** 2 + (start[1] - to[1]) ** 2) ** 0.5
 
         if not start in self.nodes:
@@ -39,7 +39,7 @@ class Graph:
             self.connections[start].append([to, Edge(distance)])
 
     def add_2directed_edges(
-        self, node1: tuple[float, float], node2: tuple[float, float]
+        self, node1: tuple, node2: tuple
     ):
         distance = ((node1[0] - node2[0]) ** 2 + (node1[1] - node2[1]) ** 2) ** 0.5
 
@@ -55,7 +55,7 @@ class Graph:
         if all(map(lambda x: x[0] != node1, self.connections[node2])):
             self.connections[node2].append([node1, Edge(distance)])
 
-    def remove_edge(self, start: tuple[float, float], to: tuple[float, float]):
+    def remove_edge(self, start: tuple, to: tuple):
         newConnectionDict = self.connections[start].copy()
         for index in range(len(self.connections[start])):
             if self.connections[start][index][0] == to:
@@ -63,7 +63,7 @@ class Graph:
                 break
         self.connections[start] = newConnectionDict
 
-    def remove_node(self, node: tuple[int, int]):
+    def remove_node(self, node: tuple):
         self.nodes.remove(node)
         self.connections.pop(node)
         self.node_data.pop(node)
@@ -71,7 +71,7 @@ class Graph:
         for existingNode in self.nodes:
             self.remove_edge(existingNode, node)
 
-    def get_edge(self, start: tuple[float, float], to: tuple[float, float]):
+    def get_edge(self, start: tuple, to: tuple):
         for index in range(len(self.connections[start])):
             if self.connections[start][index][0] == to:
                 return self.connections[start][index]
