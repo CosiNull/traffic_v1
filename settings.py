@@ -1,6 +1,6 @@
 # Files
 road_file = "test3.pickle"
-seed = 4303
+seed = 43999999999999
 # 75374827393
 
 # PArking error: 93438333, num_cars: 123
@@ -21,9 +21,6 @@ scale_speed = 0.025
 max_scale = 2.4
 min_scale = 0.6
 
-# Lights
-state_countdown = 4
-
 # Method2 Variables
 # IMPORTANT: IF YOU CHANGE THEM, ADJUST THEM IN METHOD2
 adjust_x = 1100  # move_x
@@ -31,7 +28,7 @@ adjust_y = 700  # move_y
 road_len = 52
 
 # Cars
-num_car = 300  # 123
+num_car = 300
 car_len = 8
 car_speed = 0.5
 min_dist = car_len * 0.3125

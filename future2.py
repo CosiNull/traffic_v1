@@ -297,10 +297,10 @@ def binary_insert_q(elem, arr, func=lambda x: x[2]):
 # _____________________________________
 
 
-def entry_collision(other_dist, my_dist):
-    if other_dist <= my_dist and abs(other_dist - my_dist) < 10 + stgs.car_len:
+def entry_collision(other_dist, my_dist, ID, ID_b):
+    if other_dist <= my_dist and my_dist - other_dist < 12 + stgs.car_len:
         return True
-    elif other_dist > my_dist and abs(other_dist - my_dist) < stgs.car_len * 1.6:
-        return not (other_dist - my_dist == 12.5)
+    elif other_dist > my_dist and other_dist - my_dist < stgs.car_len + 10:
+        return not (other_dist - my_dist == 17.5 and ID < ID_b)
 
     return False

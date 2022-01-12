@@ -25,7 +25,7 @@ def rand_graph_pos(graph, car_len):
 
 
 # Turning objects
-def get_abs_direction(start_node: Tuple[float, float], end_node: Tuple[float, float]):
+def get_abs_direction(start_node=Tuple, end_node=Tuple):
     if start_node[0] == end_node[0]:  # Vertical
         if start_node[1] < end_node[1]:
             return "d"
@@ -63,7 +63,7 @@ class Priority_Queue:
     def __call__(self):
         return self.data
 
-    def insert(self, elem: tuple[tuple:[float, float], float]):
+    def insert(self, elem=tuple):
         self.data.append(elem)
 
     def poll(self):
@@ -146,8 +146,8 @@ class Dheap:
 
 def dijkstra(
     graph,
-    start=tuple[float, float],
-    end=tuple[float, float],
+    start=tuple,
+    end=tuple,
     start_dir=str,
 ):
     dist = {node: math.inf for node in graph.nodes}
@@ -225,8 +225,8 @@ def a_star(graph, start=tuple[float, float], end=tuple[float, float], start_dir=
 
 def a_star(
     graph,
-    start=tuple[float, float],
-    end=tuple[float, float],
+    start=tuple,
+    end=tuple,
     start_dir=str,
 ):
     dist = {node: math.inf for node in graph.nodes}

@@ -38,9 +38,7 @@ class Graph:
         if all(map(lambda x: x[0] != to, self.connections[start])):
             self.connections[start].append([to, Edge(distance)])
 
-    def add_2directed_edges(
-        self, node1: tuple, node2: tuple
-    ):
+    def add_2directed_edges(self, node1: tuple, node2: tuple):
         distance = ((node1[0] - node2[0]) ** 2 + (node1[1] - node2[1]) ** 2) ** 0.5
 
         if not node1 in self.nodes:

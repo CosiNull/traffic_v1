@@ -38,7 +38,7 @@ def check_keys():
 
 
 # Position handling
-def adjust_pos(node=tuple[float, float], moveToMiddle=False):
+def adjust_pos(node=tuple, moveToMiddle=False):
     x = node[0]
     y = node[1]
 
@@ -64,7 +64,7 @@ def adjust_pos(node=tuple[float, float], moveToMiddle=False):
     return (x, y)
 
 
-def in_screen(node: tuple[float, float]):
+def in_screen(node=tuple):
     h_n_w = stgs.node_width * stgs.scale_factor / 2
     return (
         node[0] + h_n_w >= 0
@@ -74,7 +74,7 @@ def in_screen(node: tuple[float, float]):
     )
 
 
-def line_in_rect(node1: tuple[float, float], node2: tuple[float, float]):
+def line_in_rect(node1=tuple, node2=tuple):
     if node1[0] == node2[0]:  # Vertical (x the same)
         h_n_w = stgs.node_width * stgs.scale_factor / 2
         return (
@@ -105,11 +105,11 @@ def background():
     screen.fill(color)
 
 
-def draw_node(node=tuple[float, float]):
+def draw_node(node=tuple):
     n_w = round(stgs.node_width * stgs.scale_factor)
     x, y = adjust_pos(node, True)
     color = (10, 10, 10)
-    if node == (1152, 1272):
+    if node == (1152, 336):
         color = (200, 0, 0)
     if in_screen((x, y)):
         pg.draw.rect(screen, color, pg.Rect(x, y, n_w, n_w))
@@ -138,7 +138,7 @@ def draw_road(node1, node2):
 def draw_graph():
     visited = set()
 
-    def dfs(node=tuple[float, float]):
+    def dfs(node=tuple):
         if not node in visited:
             visited.add(node)
             for neighbour in trf.road_network.connections[node]:

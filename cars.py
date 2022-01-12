@@ -302,7 +302,7 @@ class Car:
                 # print(fut.paths[0][0], self.pos)
                 if fut.timing_paths[self.id][self.c] != stgs.time:
                     fut.timing_paths[self.id][self.c] = stgs.time
-                    print("Error cocorrection")
+                    print("Error cocorrection", self.id)
 
             else:
                 self.set_pos(trf.road_network, False)
@@ -319,6 +319,7 @@ class Car:
                 fut.reset_path(self.id)
 
                 self.c = -1
+                # self.pause = True
                 """
                 # Road Exit
                 ind = fut.binary_search_ds(stgs.time, fut.roads[(junc, my_dir)].leave)
@@ -401,7 +402,7 @@ class Car:
                 self.c += 1
                 if fut.timing_paths[self.id][self.c] != stgs.time:
                     fut.timing_paths[self.id][self.c] = stgs.time
-                    print("Error cocorrection")
+                    print("Error cocorrection", self.id)
 
                 # print(fut.paths[0][self.c], self.pos)
 
@@ -568,6 +569,7 @@ class Car:
             intersection_from = self.start_nodes[1]
             trf.roads[(intersection_from, new_dir)].add_car(self)
 
+
             # Crossing_enter
             junc = self.last_intersection
             ind = fut.linear_search(self.id, fut.junctions[junc].crossing_enter)
@@ -608,6 +610,7 @@ class Car:
         trf.junctions[self.last_intersection].crossing.remove(
             (self.junction_id[0], self.junction_id[1], self.road_to)
         )
+    
 
         """
         # Crossing_exit
@@ -620,7 +623,7 @@ class Car:
         self.c += 1
         if fut.timing_paths[self.id][self.c] != stgs.time:
             fut.timing_paths[self.id][self.c] = stgs.time
-            print("Error cocorrection")
+            print("Error cocorrection", self.id)
 
         # print(
         #     fut.timing_paths[0],
