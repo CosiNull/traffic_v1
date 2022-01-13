@@ -3,10 +3,29 @@ import settings as stgs
 import cars as c
 import pathfinding as pf
 import traffic as trf
+import random as rdn
+import parking as pk
+
+rdn.seed(stgs.seed)
 
 drawing = False
 
-cars = [c.Car(i, False) for i in range(stgs.num_car)]  # 300
+colors = [
+    (255, 0, 0),
+    (0, 150, 0),
+    (0, 0, 255),
+    (255, 0, 255),
+    (255, 255, 0),
+    (0, 255, 255),
+    (128, 0, 128),
+    (0, 128, 128),
+    (255, 140, 0),
+]
+
+cars = [
+    c.Car(i, rdn.choice(colors), parktime=rdn.randint(0, 500), autonomous=False)
+    for i in range(stgs.num_car)
+]  # 300
 
 
 # Moving Functions
@@ -171,11 +190,21 @@ def update_cars():
                     car.park_time -= 1
                 else:
                     goal = pf.rand_node(trf.road_network)
-                    while (
-                        goal == car.start_nodes[0] or goal == car.start_nodes[1]
-                    ):  # The while exists to avoid a strange bug where the cars can't identify the road that it is in
+                    true_goal = rdn.choice(trf.road_network.connections[goal])[0]
+                    while goal in {
+                        car.start_nodes[0],
+                        car.start_nodes[1],
+                    } or true_goal in {
+                        car.start_nodes[0],
+                        car.start_nodes[1],
+                    }:  # The while exists to avoid a strange bug where the cars can't identify the road that it is in
                         goal = pf.rand_node(trf.road_network)
-                    car.find_path(goal, cars)
+                        true_goal = rdn.choice(trf.road_network.connections[goal])[0]
+                    park_slot = pk.generate_goal(car.id, true_goal, goal)
+                    if park_slot == None:
+                        continue
+                    dist, target_pos = park_slot
+                    car.find_path(goal, true_goal, cars, dist, target_pos)
             else:
                 car.enter_road()
         else:

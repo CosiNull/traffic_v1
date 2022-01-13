@@ -1,4 +1,3 @@
-from os import curdir
 import settings as stgs
 
 import math
@@ -7,27 +6,18 @@ import pathfinding as pf
 import future as fut
 
 import traffic as trf
+import parking as pk
 
 
 # Local settings
 rdn.seed(stgs.seed)
 car_width = int((stgs.node_width / 2) * 0.5)
-colors = [
-    (255, 0, 0),
-    (0, 150, 0),
-    (0, 0, 255),
-    (255, 0, 255),
-    (255, 255, 0),
-    (0, 255, 255),
-    (128, 0, 128),
-    (0, 128, 128),
-    (255, 140, 0),
-]
+
 
 # Car__________________________________________________________________________________________________________
 class Car:
     # Inittializing
-    def __init__(self, ID, autonomous=False):
+    def __init__(self, ID, color, parktime=0, autonomous=False):
         self.id = ID
         self.state = 0
         self.len = stgs.car_len
@@ -37,12 +27,12 @@ class Car:
 
         self.set_pos(trf.road_network)
 
-        self.color = colors[rdn.randint(0, len(colors) - 1)]
+        self.color = color
         self.speed = stgs.car_speed
         self.park_speed = 0.4
 
         self.path = None
-        self.park_time = rdn.randint(0, 500)
+        self.park_time = parktime
         self.goal = 0
 
         self.pause = False
@@ -65,7 +55,7 @@ class Car:
 
         # Set Position
         variation = stgs.node_width / 2 - self.width
-        variation += Parking_Lot.dist_from_road
+        variation += pk.Parking_Lot.dist_from_road
 
         if node[0] == to[0]:
             if node[1] > to[1]:  # Vertical (x are the same) (0,4)(0,5)
@@ -94,11 +84,11 @@ class Car:
         self.pos = (round(self.pos[0]), round(self.pos[1]))
 
         #
-        if not parking.can_park(self.start_nodes, self.pos, self.len, self.id):
+        if not pk.parking.can_park(self.start_nodes, self.pos, self.len, self.id):
             self.set_pos(graph, True)
             return
         if random:
-            parking.add_car(self.start_nodes, self.pos, self.len, self.id)
+            pk.parking.add_car(self.start_nodes, self.pos, self.len, self.id)
 
         #
         self.init_pos = self.pos
@@ -113,83 +103,32 @@ class Car:
         self.gas = 0
         self.turn_state = 0
 
-    def find_path(self, goal, cars, func="as"):
+    def find_path(self, goal, true_goal, cars, dist, target_pos, func="as"):
+
         # Set Start Pos
         start = self.start_nodes[1]
         start_dir = pf.angle_to_dir[self.angle]
 
         if func == "dj":
-            self.path = pf.pathfind_dj(
-                trf.road_network,
-                start,
-                goal,
-                start_dir,
-            )[0]
+            self.path = pf.pathfind_dj(trf.road_network, start, goal, start_dir)[0]
         elif func == "as":
             self.path = pf.pathfind_as(
-                trf.road_network,
-                start,
-                goal,
-                start_dir,
+                trf.road_network, start, goal, start_dir, true_goal
             )[0]
         else:
             raise Exception("ERROR: Bad 'func' Parameter")
+
         if self.path == None:
+            print("Could not find good path")
             return
 
-        last_node = self.path[-1]
-        before_last_node = self.path[-2]
+        self.path.append(true_goal)
+        self.predicted_nodes = (goal, true_goal)
 
-        self.goal = 0
+        self.goal = dist
+        self.target_pos = target_pos
 
-        u_s = 0 if last_node[0] != before_last_node[0] else 1
-        a = (
-            stgs.car_len / 2
-            + stgs.node_width / 2
-            + stgs.park_dist
-            + parking.min_park_dist
-        )
-        b = (
-            abs(last_node[u_s] - before_last_node[u_s])
-            - stgs.node_width / 2
-            - stgs.car_len / 2
-            - stgs.park_dist
-            - parking.min_park_dist
-        )
-
-        if a >= b:
-            self.path = None
-            return
-        self.goal = rdn.randint(
-            math.ceil(a),
-            math.floor(b),
-        )
-        self.predicted_nodes = (before_last_node, last_node)
-
-        # Parking reservation
-        pos_dir = (
-            1 if self.predicted_nodes[1][u_s] > self.predicted_nodes[0][u_s] else -1
-        )
-        edge = (before_last_node, last_node)
-        pos = list(last_node)
-
-        pos[u_s] -= self.goal * pos_dir
-        s_i = 0 if u_s == 1 else 1
-
-        if s_i == 1:
-            pos[s_i] += 12 * pos_dir
-        else:
-            pos[s_i] -= 12 * pos_dir
-
-        pos = tuple(pos)
-
-        self.target_pos = pos
-
-        if parking.can_park(edge, pos, self.len, self.id):
-            parking.add_car(edge, pos, self.len, self.id)
-        else:
-            self.path = None
-            return
+        pk.parking.add_car(self.predicted_nodes, target_pos, stgs.car_len, self.id)
 
         # The stuff
         def add_dir(path_list, index, abs_curr_dir):
@@ -274,7 +213,7 @@ class Car:
         if self.turn_state == -1:
             if exit:
                 self.turn_state = 0
-                parking.delete_car(self.start_nodes, self.init_pos)
+                pk.parking.delete_car(self.start_nodes, self.init_pos)
                 self.state = 2
                 # print(self.init_pos[self.u_s] - self.pos[self.u_s])
 
@@ -510,10 +449,6 @@ class Car:
             self.angle = (self.road_angle + math.pi / 2) % (math.pi * 2)
             self.road_angle = self.angle
 
-            # if self.road_angle == 0 or self.road_angle == math.pi:
-            #    print(
-            #        f"Distance: {self.pos[0]-self.save[0][0]}, Gas: {self.gas-self.save[1]}"
-            #    )
             self.exit_intersection()
 
     left_turn_deviation = 0.032
@@ -569,7 +504,6 @@ class Car:
             intersection_from = self.start_nodes[1]
             trf.roads[(intersection_from, new_dir)].add_car(self)
 
-
             # Crossing_enter
             junc = self.last_intersection
             ind = fut.linear_search(self.id, fut.junctions[junc].crossing_enter)
@@ -610,7 +544,6 @@ class Car:
         trf.junctions[self.last_intersection].crossing.remove(
             (self.junction_id[0], self.junction_id[1], self.road_to)
         )
-    
 
         """
         # Crossing_exit
@@ -656,62 +589,4 @@ class Car:
         return 0 if self.start_nodes[0][0] != self.start_nodes[1][0] else 1
 
 
-# Parked______________________________________________________________________________
-class Parking_Lot:
-    min_park_dist = stgs.min_dist * 1.5
-    dist_from_road = stgs.node_width / 2
-
-    def __init__(self):
-        self.data = {}
-
-    def __call__(self):
-        return self.data
-
-    def __getitem__(self, key):
-        return self.data[key]
-
-    def can_park(self, edge, pos, car_length, ID):
-        if not edge in self().keys():
-            return True
-        # Check collisions
-        # horizontal or vertical
-        coord_index = 0 if edge[0][1] == edge[1][1] else 1
-
-        # [0] pos [1] car_len [2] id
-        for park in self()[edge]:
-            dist = abs(park[0][coord_index] - pos[coord_index])
-            min_dist = park[1] / 2 + car_length / 2 + self.min_park_dist
-
-            """
-            if park[2] == ID:
-                print("ok...")
-                print(pos, park[0])
-                if park[0] == pos:
-                    print("YOOO")
-            """
-
-            if dist < min_dist and ID != park[2]:
-                return False
-
-        return True
-
-    def add_car(self, edge, pos, car_length, ID):
-        if not edge in self().keys():
-            self.data[edge] = []
-        self.data[edge].append((pos, car_length, ID))
-
-    def delete_car(self, edge, pos):
-        if edge in self().keys():
-            for i in range(len(self()[edge])):
-
-                if self()[edge][i][0] == pos:
-                    self.data[edge].pop(i)
-                    if len(self.data[edge]) == 0:
-                        del self.data[edge]
-                    return
-
-        raise Exception("ERROR: Car described doesn't exist")
-
-
-parking = Parking_Lot()
 yo = 0

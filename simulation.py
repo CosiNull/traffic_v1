@@ -1,7 +1,5 @@
 import road_visuals as rv
 import settings as stgs
-import future as fut
-import cars
 
 running = True
 while running:
@@ -14,5 +12,3 @@ while running:
     rv.check_keys()
 
     rv.update_cars()
-
-  

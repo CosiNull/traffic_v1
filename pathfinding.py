@@ -1,7 +1,8 @@
 import random as rdn
 import settings as stgs
-from typing import Tuple
 import math
+
+rdn.seed(stgs.seed)
 
 # Get random node
 def rand_node(graph):
@@ -25,7 +26,7 @@ def rand_graph_pos(graph, car_len):
 
 
 # Turning objects
-def get_abs_direction(start_node=Tuple, end_node=Tuple):
+def get_abs_direction(start_node=tuple, end_node=tuple):
     if start_node[0] == end_node[0]:  # Vertical
         if start_node[1] < end_node[1]:
             return "d"
@@ -223,12 +224,7 @@ def a_star(graph, start=tuple[float, float], end=tuple[float, float], start_dir=
 """
 
 
-def a_star(
-    graph,
-    start=tuple,
-    end=tuple,
-    start_dir=str,
-):
+def a_star(graph, start, end, start_dir, true_goal):
     dist = {node: math.inf for node in graph.nodes}
     prev = {}
 
@@ -239,7 +235,7 @@ def a_star(
     while len(pq()) > 0:
         node = pq.poll()[0]
         if node == end:
-            break
+            return (dist, prev)
 
         for neighbour, edge in graph.connections[node]:
             if node in prev and prev[node] == neighbour:
@@ -248,6 +244,8 @@ def a_star(
                 node, neighbour
             ):
                 continue
+            elif node == true_goal and neighbour == end:  # No U_turns towards the goal
+                continue
 
             current_dist = dist[node] + edge.length
             if current_dist < dist[neighbour]:
@@ -255,11 +253,14 @@ def a_star(
                 pq.insert((neighbour, current_dist + manhattan_dist(neighbour, end)))
                 prev[neighbour] = node
 
-    return (dist, prev)
+    return (None, None)
 
 
 # _________________________________________________________________________
 def reverse_path(distances, previous, start, end):
+    if distances == None:
+        return (None, None)
+
     dist = distances[end]
 
     current_node = end
@@ -277,5 +278,5 @@ def pathfind_dj(graph, start, end, start_dir):
     return reverse_path(*dijkstra(graph, start, end, start_dir), start, end)
 
 
-def pathfind_as(graph, start, end, start_dir):
-    return reverse_path(*a_star(graph, start, end, start_dir), start, end)
+def pathfind_as(graph, start, end, start_dir, true_goal):
+    return reverse_path(*a_star(graph, start, end, start_dir, true_goal), start, end)
