@@ -1,4 +1,3 @@
-from os import linesep
 import settings as stgs
 import traffic as trf
 import math
@@ -232,7 +231,7 @@ def get_road_cars_pos(ID, time, preds):
 
             dist -= time_elapsed * stgs.car_speed
 
-            if dist == line_len + stgs.car_len/2: # Double identity
+            if dist == line_len + stgs.car_len / 2:  # Double identity
                 # Add to line
                 liners.append(ID_b)
                 line_len += stgs.min_dist + stgs.car_len
@@ -255,7 +254,6 @@ def get_road_cars_pos(ID, time, preds):
                 line_len += stgs.min_dist + stgs.car_len
             elif dist > goal_dist:
                 flowing.append((ID_b, dist, goal_dist))
-
 
     # 2. See when next car departs to get extra tiny line
     extra_dist = 0
@@ -325,7 +323,7 @@ def get_road_cars_pos(ID, time, preds):
             )
             # Put preds if time_to_wait exceeds
             # Delay
-            ind = backward_linear_s(ID_b, liners, func=lambda x:x)
+            ind = backward_linear_s(ID_b, liners, func=lambda x: x)
             for i in range(ind, len(res)):
                 ID_1 = liners[i]
                 ID_prev = liners[i - 1]

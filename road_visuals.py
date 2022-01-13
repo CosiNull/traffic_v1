@@ -213,37 +213,8 @@ def update_cars():
 
 # Initializing pygame_________________________________________________________
 import pygame as pg
-
 pg.init()
 screen = pg.display.set_mode([stgs.width, stgs.height])
 pg.display.set_caption("Simulation")
 pg.event.set_allowed([pg.QUIT, pg.KEYDOWN, pg.KEYUP])
 
-"""
-res1 = []
-res2 = []
-for i in range(1000):
-    print()
-    start = rand_node(road_network)
-    end = rand_node(road_network)
-
-    save = time.time()
-    print(pathfind1(road_network, start, end))
-    milli1 = 1000 * (time.time() - save)
-    print("Djisktra speed: ", milli1)
-
-    save = time.time()
-    print(pathfind2(road_network, start, end))
-    milli2 = 1000 * (time.time() - save)
-    print("A star speed: ", milli2)
-
-    print()
-    res1.append(milli1)
-    res2.append(milli2)
-
-print("Dijsktra Mean: ", sum(res1) / len(res1))
-print("A star Mean: ", sum(res2) / len(res2))
-"""
-
-# print(cars[122].color, cars[82].color, cars[46].color)
-# purple, cyan, green
