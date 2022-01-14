@@ -213,8 +213,8 @@ def update_cars():
 
 # Initializing pygame_________________________________________________________
 import pygame as pg
+
 pg.init()
 screen = pg.display.set_mode([stgs.width, stgs.height])
 pg.display.set_caption("Simulation")
 pg.event.set_allowed([pg.QUIT, pg.KEYDOWN, pg.KEYUP])
-
