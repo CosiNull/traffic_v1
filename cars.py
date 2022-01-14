@@ -87,6 +87,7 @@ class Car:
         if not pk.parking.can_park(self.start_nodes, self.pos, self.len, self.id):
             self.set_pos(graph, True)
             return
+
         if random:
             pk.parking.add_car(self.start_nodes, self.pos, self.len, self.id)
 
