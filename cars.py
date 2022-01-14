@@ -8,6 +8,8 @@ import future as fut
 import traffic as trf
 import parking as pk
 
+import exit_pred as ex
+
 
 # Local settings
 rdn.seed(stgs.seed)
@@ -109,6 +111,9 @@ class Car:
         # Set Start Pos
         start = self.start_nodes[1]
         start_dir = pf.angle_to_dir[self.angle]
+
+        # Before its paths
+        self.time_pred = ex.predict_first_node(cars, self.id)
 
         if func == "dj":
             self.path = pf.pathfind_dj(trf.road_network, start, goal, start_dir)[0]
@@ -343,6 +348,9 @@ class Car:
                 if fut.timing_paths[self.id][self.c] != stgs.time:
                     fut.timing_paths[self.id][self.c] = stgs.time
                     print("Error cocorrection", self.id)
+
+                # if self.time_pred != stgs.time and self.c == 1:
+                #    print(self.id, self.time_pred, stgs.time)
 
                 # print(fut.paths[0][self.c], self.pos)
 

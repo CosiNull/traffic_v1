@@ -1,4 +1,3 @@
-from posixpath import dirname
 import settings as stgs
 import traffic as trf
 import future as fut
@@ -8,24 +7,19 @@ pred_paths = [[] for i in range(stgs.num_car)]
 pred_timing_paths = [[] for i in range(stgs.num_car)]
 
 
-junctions = fut.make_intersection_dict(trf.road_network)
-roads = fut.make_road_dict(trf.road_network)
-
-
 def add_car_path(ID, pos, timing):
-    pred_paths[ID].append((pos))
+    pred_paths[ID].append(pos)
     pred_timing_paths[ID].append(timing)
 
 
-def set_datastructures():
-    global junctions, roads
-    junctions = fut.make_intersection_dict(trf.road_network)
-    roads = fut.make_road_dict(trf.road_network)
-
-
 # ___The cutting code___________________________________________
-def skip_queue(cars, subtime, ID):
-    set_datastructures()
+def skip_queue(cars, subtime):
+    global pred_paths, pred_timing_paths
+    fut.reset_datastructures()
+
+    pred_paths = [[] for i in range(stgs.num_car)]
+    pred_timing_paths = [[] for i in range(stgs.num_car)]
+
     queue = []
     preds = [None for i in range(stgs.num_car)]
     for car in cars:
@@ -34,13 +28,13 @@ def skip_queue(cars, subtime, ID):
             fut.binary_insert_q(pred, queue)
 
             preds[car.id] = pred[2]
-        elif car.id == ID:
-            fut.start_times[ID] = stgs.time + 2
-            fut.true_paths[ID] = [(car.init_pos, "e"), (car.start_nodes[1], "i")]
+        elif car.id == subtime:
+            fut.start_times[subtime] = stgs.time + 2
+            fut.true_paths[subtime] = [(car.init_pos, "e"), (car.start_nodes[1], "i")]
             dir = get_abs_direction(*car.start_nodes)
-            fut.dir_paths[ID] = [dir, dirname]
+            fut.dir_paths[subtime] = [dir, dir]
 
-            pred = (car.id, fut.get_road_entry_pos(car.id), fut.start_times[ID])
+            pred = (car.id, fut.get_road_entry_pos(car.id), fut.start_times[subtime])
             fut.binary_insert_q(pred, queue)
 
             preds[car.id] = pred[2]
@@ -86,7 +80,6 @@ def predict_curr_car(car, subtime):
         curr_dist = road.get_car_dist(car.pos) - fut.junction_space
         curr_dist = curr_dist if car.id < subtime else curr_dist - stgs.car_speed
         time_arrive = fut.Road.estimate_arrive(stgs.time, curr_dist)
-
         return (car.id, fut.get_intersection_pos(car.id, pred_paths), time_arrive)
 
     elif action in {"l", "r", "u"}:
@@ -120,11 +113,11 @@ def predict_curr_car(car, subtime):
         road.add_car_junc_estimation(car.id, old_time, old_dist)
         road.curr_capacity -= 1
 
-        next_road = roads[
+        next_road = fut.roads[
             fut.true_paths[car.id][car.c][0], fut.dir_paths[car.id][car.c + 2]
         ]
 
-        time_departed = fut.timing_paths[car.id][-1] - fut.time_turn[action]
+        time_departed = pred_timing_paths[car.id][-1] - fut.time_turn[action]
         junc = fut.true_paths[car.id][car.c][0]
 
         entry_pos = pred_paths[car.id][-1]
@@ -135,7 +128,7 @@ def predict_curr_car(car, subtime):
         entry = trf.inverse_dir[fut.dir_paths[car.id][car.c]]
         entry_to = fut.dir_paths[car.id][car.c + 2]
 
-        junctions[junc].add_car_crossing(car.id, time_departed, entry, entry_to)
+        fut.junctions[junc].add_car_crossing(car.id, time_departed, entry, entry_to)
 
         next_action = get_car_action(car.id, car.c + 1)
         if next_action == "i":
@@ -149,7 +142,7 @@ def predict_curr_car(car, subtime):
         pred_timing_paths[car.id] = fut.timing_paths[car.id][0 : car.c + 1]
 
         # Enter estimation here
-        road = roads[fut.true_paths[car.id][car.c][0], fut.dir_paths[car.id][-1]]
+        road = fut.roads[fut.true_paths[car.id][car.c][0], fut.dir_paths[car.id][-1]]
         entry_pos = pred_paths[car.id][-1]
         time = pred_timing_paths[car.id][-1]
         dist = road.get_car_dist(entry_pos) - fut.junction_space
@@ -170,12 +163,13 @@ def predict_curr_car(car, subtime):
 
 
 # ____The predicting code______________________________________
-def predict_path(cars, subtime, target_id):
-    queue, preds = skip_queue(cars, subtime, target_id)
+def predict_first_node(cars, subtime):
+    queue, preds = skip_queue(cars, subtime)
 
     # The Great Loop
     while len(queue) > 0:
         ID, pos, time = queue.pop(0)
+
         junction, action = fut.true_paths[ID][len(pred_paths[ID])]
 
         if action == "e":
@@ -210,7 +204,8 @@ def predict_path(cars, subtime, target_id):
             # road = get_entry_road(junction, dir_paths[ID][len(paths[ID]) - 1])
 
             if car_in_front == None:  # if no one is there
-                if target_id == ID:
+
+                if subtime == ID:
                     return time
 
                 add_car_path(ID, pos, time)
@@ -221,7 +216,6 @@ def predict_path(cars, subtime, target_id):
 
             else:
                 fut.binary_insert_q(car_in_front, queue)
-
                 preds[ID] = car_in_front[2]
 
         elif action in {"l", "r", "u"}:
@@ -243,13 +237,15 @@ def predict_path(cars, subtime, target_id):
                 road.add_car_exit(ID, time)
 
                 # Register crossing
-                intersect = junctions[junction]
+                intersect = fut.junctions[junction]
                 entry = trf.inverse_dir[fut.dir_paths[ID][len(pred_paths[ID]) - 2]]
                 entry_to = fut.dir_paths[ID][len(pred_paths[ID])]
                 intersect.add_car_crossing(ID, time, entry, entry_to)
 
                 # Add to next road
-                next_road = roads[(junction, fut.dir_paths[ID][len(pred_paths[ID])])]
+                next_road = fut.roads[
+                    (junction, fut.dir_paths[ID][len(pred_paths[ID])])
+                ]
                 time_cross = fut.time_turn[action] + 1  # 1 is time delay
                 extra_dist = time_cross * stgs.car_speed - fut.junction_space
                 dist = next_road.get_car_dist(finish_cross[1]) + extra_dist
@@ -278,7 +274,7 @@ def predict_path(cars, subtime, target_id):
                 add_car_path(ID, pos, time + 32 + 1)
 
                 # Register exit
-                road = roads[(fut.true_paths[ID][-2][0], fut.dir_paths[ID][-1])]
+                road = fut.roads[(fut.true_paths[ID][-2][0], fut.dir_paths[ID][-1])]
                 road.add_car_exit(ID, time)
 
                 preds[ID] = None
@@ -286,3 +282,6 @@ def predict_path(cars, subtime, target_id):
                 fut.binary_insert_q(line_park, queue)
 
                 preds[ID] = line_park[2]
+
+    # If nothing is returned:
+    raise Exception("Could not predict the parking entrance accuretely")

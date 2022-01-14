@@ -4,8 +4,8 @@ import math
 from future2 import *
 
 
-junctions = make_intersection_dict(trf.road_network)
-roads = make_road_dict(trf.road_network)
+# junctions = make_intersection_dict(trf.road_network)
+# roads = make_road_dict(trf.road_network)
 # _____________________________________________________________________________________________________
 def add_car_path(ID, pos, timing):
     paths[ID].append((pos))
@@ -683,16 +683,6 @@ def predict_park_line(ID, preds, paths):
     timing = timing + 1 if ID < ID_b else timing
 
     return (ID, 4, timing)
-
-
-def reset_all_datastructures():
-    # Reset paths
-    for ID in range(stgs.num_car):
-        paths[ID] = []
-        timing_paths[ID] = []
-
-    # Reset roads
-    reset_datastructures()
 
 
 def reset_datastructures():
