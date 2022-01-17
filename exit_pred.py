@@ -221,10 +221,6 @@ def predict_first_node(cars, subtime):
         elif action in {"l", "r", "u"}:
             crossable_pred = fut.predict_junc_crossable(ID, time, preds, pred_paths)
             if crossable_pred[2] == time:  # Let's cross
-                # Adding to cross
-                # intersect = junctions[junction]
-                # entry = trf.inverse_dir[dir_paths[ID][len(paths[ID]) - 1]]
-                # intersect.add_car_entry(ID, entry, time)
 
                 # Predicting next cross
                 finish_cross = fut.predict_turn(ID, time, pred_paths)

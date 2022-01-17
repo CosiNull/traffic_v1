@@ -9,6 +9,7 @@ import traffic as trf
 import parking as pk
 
 import exit_pred as ex
+import multi_agent as mlt
 
 
 # Local settings
@@ -43,6 +44,8 @@ class Car:
 
         self.autonomous = autonomous
         self.c = -1
+
+        self.checked = False
 
     def set_pos(self, graph, random=True):
         if random:
@@ -113,7 +116,7 @@ class Car:
         start_dir = pf.angle_to_dir[self.angle]
 
         # Before its paths
-        self.time_pred = ex.predict_first_node(cars, self.id)
+        # self.time_pred = ex.predict_first_node(cars, self.id)
 
         if func == "dj":
             self.path = pf.pathfind_dj(trf.road_network, start, goal, start_dir)[0]
@@ -245,6 +248,7 @@ class Car:
 
                 # print(fut.timing_paths[0][0], stgs.time)
                 # print(fut.paths[0][0], self.pos)
+
                 if fut.timing_paths[self.id][self.c] != stgs.time:
                     fut.timing_paths[self.id][self.c] = stgs.time
                     print("Error cocorrection", self.id)
@@ -261,9 +265,9 @@ class Car:
                 if timing != stgs.time:
                     print(self.id, self.color, fut.true_paths[self.id][-2])
                     print(timing, stgs.time)
-                fut.reset_path(self.id)
 
                 self.c = -1
+                fut.reset_path(self.id)
                 # self.pause = True
                 """
                 # Road Exit
@@ -345,6 +349,7 @@ class Car:
                     print(fut.junctions[junc].entries[from_inter][ind], stgs.time)
                     """
                 self.c += 1
+
                 if fut.timing_paths[self.id][self.c] != stgs.time:
                     fut.timing_paths[self.id][self.c] = stgs.time
                     print("Error cocorrection", self.id)
@@ -483,6 +488,24 @@ class Car:
         start_inter = trf.inverse_dir[start_dir]
         next_dir = trf.abs_dir(start_dir, self.path[0])
 
+        if not self.checked:
+            self.checked = True
+            path_so_far = fut.paths[self.id][0 : self.c + 1]
+            timing = mlt.predict_time_cross(
+                self.id,
+                stgs.time,
+                self.last_intersection,
+                start_inter,
+                next_dir,
+                path_so_far,
+            )
+            ind = fut.linear_search(
+                self.id, fut.junctions[self.last_intersection].crossing_enter
+            )
+            pred = fut.junctions[self.last_intersection].crossing_enter[ind][1]
+            if timing != pred:
+                print(timing, pred)
+
         # Go check who is where
         crossable = all(
             [
@@ -495,6 +518,7 @@ class Car:
             crossable  # Crossing
             and not trf.roads[(self.last_intersection, next_dir)].is_full()
         ):
+            self.checked = False
 
             self.waiting_intersection = False
             # Remove from junction data structure
@@ -514,6 +538,7 @@ class Car:
             trf.roads[(intersection_from, new_dir)].add_car(self)
 
             # Crossing_enter
+
             junc = self.last_intersection
             ind = fut.linear_search(self.id, fut.junctions[junc].crossing_enter)
             timing = fut.junctions[junc].crossing_enter[ind][1]
@@ -563,6 +588,7 @@ class Car:
 
         # Crossing remove
         self.c += 1
+
         if fut.timing_paths[self.id][self.c] != stgs.time:
             fut.timing_paths[self.id][self.c] = stgs.time
             print("Error cocorrection", self.id)

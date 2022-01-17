@@ -4,8 +4,8 @@ import math
 from future2 import *
 
 
-# junctions = make_intersection_dict(trf.road_network)
-# roads = make_road_dict(trf.road_network)
+junctions = make_intersection_dict(trf.road_network)
+roads = make_road_dict(trf.road_network)
 # _____________________________________________________________________________________________________
 def add_car_path(ID, pos, timing):
     paths[ID].append((pos))
@@ -90,6 +90,7 @@ def predict_path(cars, subtime):
                 dist = road.get_car_dist(pos) - junction_space
                 # road.add_car_enter(ID, time + 32, dist)
                 road.add_car_junc_estimation(ID, time + 32, dist)
+
             else:
                 binary_insert_q(pred, queue)
 
@@ -110,6 +111,11 @@ def predict_path(cars, subtime):
 
                 preds[ID] = pred[2]
 
+                # Adding to cross
+                intersect = junctions[junction]
+                entry = trf.inverse_dir[dir_paths[ID][len(paths[ID]) - 1]]
+                intersect.add_car_entry(ID, entry, time)
+
             else:
                 binary_insert_q(car_in_front, queue)
 
@@ -118,10 +124,6 @@ def predict_path(cars, subtime):
         elif action in {"l", "r", "u"}:
             crossable_pred = predict_junc_crossable(ID, time, preds, paths)
             if crossable_pred[2] == time:  # Let's cross
-                # Adding to cross
-                # intersect = junctions[junction]
-                # entry = trf.inverse_dir[dir_paths[ID][len(paths[ID]) - 1]]
-                # intersect.add_car_entry(ID, entry, time)
 
                 # Predicting next cross
                 finish_cross = predict_turn(ID, time, paths)
@@ -767,6 +769,11 @@ def predict_curr_car(car, subtime):
             time = timing_paths[car.id][-2]
             dist = road.get_car_dist(entry_pos) - junction_space
 
+            # Adding to cross
+            intersect = junctions[true_paths[car.id][car.c][0]]
+            entry = trf.inverse_dir[dir_paths[car.id][len(paths[car.id]) - 1]]
+            intersect.add_car_entry(car.id, entry, timing_paths[car.id][-1])
+
             road.add_car_junc_estimation(car.id, time, dist)
             time_arrive = timing_paths[car.id][-1]
             timing = time_arrive + 1 if stgs.time == time_arrive else stgs.time
@@ -799,6 +806,11 @@ def predict_curr_car(car, subtime):
         entry_to = dir_paths[car.id][car.c + 2]
 
         junctions[junc].add_car_crossing(car.id, time_departed, entry, entry_to)
+
+        # Adding to cross
+        intersect = junctions[true_paths[car.id][car.c][0]]
+        entry = trf.inverse_dir[dir_paths[car.id][len(paths[car.id]) - 2]]
+        intersect.add_car_entry(car.id, entry, timing_paths[car.id][-2])
 
         next_action = get_car_action(car.id, car.c + 1)
         if next_action == "i":

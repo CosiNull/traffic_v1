@@ -59,6 +59,7 @@ class Intersection:
     def __init__(self, entries):
         self.entries = {entry: [] for entry in entries}  # entry: [(ID,time)]
         self.crossing_enter = []
+        self.entry_cross = {entry: [] for entry in entries}
         self.crossing_exit = []
 
     def add_car_entry(self, ID, entry, time):
@@ -74,52 +75,21 @@ class Intersection:
         func = lambda x: x[1]
         binary_insertion(elem, arr, func)
 
+        self.entry_cross[entry].append((ID, time, entry_to))
+
         time_crossing = time_turn[relative_dir[opposite_dir[entry]][entry_to]]
         elem_2 = (ID, time + time_crossing, entry, entry_to)
         arr_2 = self.crossing_exit
         binary_insert_q(elem_2, arr_2, func=func)
-
-    def update_intersection(self):
-        # Getting the ids to remove
-        removed_elem = []
-        id_removal = set()
-        for elem in self.crossing_exit:
-            if elem[1] <= stgs.time:
-                removed_elem.append(elem)
-            else:
-                break
-
-        # Remove in crossing_exit
-        for i in removed_elem:
-            self.crossing_exit.pop(0)
-            id_removal.add(i[0])
-
-        # Remove in crossing_enter
-        i = 0
-        while len(id_removal) > 0:
-            ID = self.crossing_enter[i][0]
-            if ID in id_removal:
-                id_removal.remove(ID)
-                self.crossing_enter.pop(i)
-            else:
-                i += 1
-
-        # Remove in car_entry
-        for ID, time, entry, entry_to in removed_elem:
-            arr = self.entries[entry]
-            for i in arr:
-                if i[0] == ID:
-                    arr.remove(i)
-                    break
 
 
 class Road:
     def __init__(self, node1, node2):
         self.enter = []
         self.estimation = []
+        self.in_road = []
         self.leave = []
-        # self.line = [(None, 0, 0)]  # (id_last_car, length, Time)
-        # self.visited = set()
+        self.timely_capacity = [(0, 0, "i")]  # (capacity, time, what_happened)
 
         self.max_capacity = trf.Road.max_capacity(node1, node2)
         self.curr_capacity = 0
@@ -142,6 +112,8 @@ class Road:
         binary_insertion(elem, arr, func=func)
         self.curr_capacity += 1
 
+        self.timely_capacity.append((self.curr_capacity, time, "i"))
+
     def add_car_exit(self, ID, time):
         elem = (ID, time)
         arr = self.leave
@@ -150,63 +122,10 @@ class Road:
         binary_insertion(elem, arr, func)
         self.curr_capacity -= 1
 
-        # self.visited.remove(ID)
-
-    def add_line(self, id_last_car, time):
-        self.line.append(id_last_car, time, self.line[-1][2] + 1)
+        self.timely_capacity.append((self.curr_capacity, time, "d"))
 
     def delete_line(self, time):
         self.line.append(self.line[-1][0], time, self.line[-1][2] - 1)
-
-    def update_road(self):
-        # Getting the ids to remove
-        id_removal = set()
-        id_removal_2 = set()
-        id_removal_3 = set()
-
-        for elem in self.leave:
-            if elem[1] <= stgs.time:
-                id_removal.add(elem[0])
-                id_removal_2.add(elem[0])
-                id_removal_3.add(elem[0])
-            else:
-                break
-
-        # Remove in leave
-        for i in id_removal:
-            self.leave.pop(0)
-
-        # Remove in enter
-        i = 0
-        while len(id_removal) > 0:
-            ID = self.enter[i][0]
-            if ID in id_removal:
-                id_removal.remove(ID)
-                self.enter.pop(i)
-            else:
-                i += 1
-
-        """
-        # Remove in line
-        i = 0
-        while len(id_removal_2) > 0:
-            ID = self.line[i][0]
-            if ID in id_removal_2:
-                id_removal_2.remove(ID)
-                self.line.pop(i)
-            else:
-                i += 1
-        """
-
-        # Estimation
-        i = 0
-        while len(id_removal_3) > 0:
-            ID = self.estimation[i][0]
-            if ID in id_removal_3:
-                id_removal_3.remove(ID)
-                self.estimation.pop(i)
-            else:
-                i += 1
 
     def get_car_dist(self, pos):
         ind = 0 if self.start[0] != self.to[0] else 1
