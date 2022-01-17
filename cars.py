@@ -110,6 +110,7 @@ class Car:
         self.turn_state = 0
 
     def find_path(self, goal, true_goal, cars, dist, target_pos, func="as"):
+        fut.reset_path(self.id)
 
         # Set Start Pos
         start = self.start_nodes[1]
@@ -267,7 +268,7 @@ class Car:
                     print(timing, stgs.time)
 
                 self.c = -1
-                fut.reset_path(self.id)
+
                 # self.pause = True
                 """
                 # Road Exit
@@ -502,9 +503,10 @@ class Car:
             ind = fut.linear_search(
                 self.id, fut.junctions[self.last_intersection].crossing_enter
             )
-            pred = fut.junctions[self.last_intersection].crossing_enter[ind][1]
-            if timing != pred:
-                print(timing, pred)
+            real = fut.junctions[self.last_intersection].crossing_enter[ind][1]
+            if timing != real:
+                print(stgs.time, timing, real)
+                print("IDEN", self.last_intersection, self.color)
 
         # Go check who is where
         crossable = all(

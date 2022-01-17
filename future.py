@@ -716,6 +716,9 @@ def skip_queue(cars, subtime):
             binary_insert_q(pred, queue)
 
             preds[car.id] = pred[2]
+
+    for id, road in roads.items():
+        road.timely_capacity = [(road.curr_capacity, stgs.time, "i")]
     return (queue, preds)
 
 
@@ -790,12 +793,13 @@ def predict_curr_car(car, subtime):
         old_pos = paths[car.id][-3]
         old_dist = road.get_car_dist(old_pos) - junction_space
         road.add_car_junc_estimation(car.id, old_time, old_dist)
-        road.curr_capacity -= 1
 
         next_road = roads[true_paths[car.id][car.c][0], dir_paths[car.id][car.c + 2]]
 
         time_departed = timing_paths[car.id][-1] - time_turn[action]
         junc = true_paths[car.id][car.c][0]
+
+        road.curr_capacity -= 1
 
         entry_pos = paths[car.id][-1]
         time = timing_paths[car.id][-1]

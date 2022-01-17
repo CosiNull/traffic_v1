@@ -85,7 +85,7 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
 
     # 1. Get the arrivals
     arrivals_ind = {}
-    banned_ids = set()
+    banned_ids = set([ID])
 
     for entry in entries:
         arr = true_junction.entry_cross[entry]
@@ -120,14 +120,15 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
         if arr[index][0] == ID:
             index -= 1
         id = arr[index][0]
+        time_leave = true_junction.entry_cross[entry_from][index][1]
 
-    if index < len(arr) and arr[index][1] < time and time - arr[index][1] <= 52:
+    if index < len(arr) and arr[index][1] < time and time - time_leave <= 52:
         ind = backward_linear_s(junc, fut.true_paths[id])
         paths[id] = fut.paths[id][0:ind]
         timing_paths[id] = fut.timing_paths[id][0:ind]
 
         next_entry = fut.dir_paths[id][ind + 1]
-        elem = (id, "t", arr[index][1] + 1, entry_from, next_entry)
+        elem = (id, "t", time_leave, entry_from, next_entry)
         binary_insert_q(elem, queue)
 
         last_left[next_entry] = min(elem[2], last_left[next_entry])
@@ -142,10 +143,11 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
             continue
 
         capacity, timing, type = road.timely_capacity[ind]
+
         if not (timing == time and type == "i"):
             capacity = road.timely_capacity[ind - 1][0]
 
-        index = binary_search_ds(time, road.leave)
+        index = binary_search_ds(last_left[entry] - 1, road.leave)
 
         c = 1
         while c <= capacity:
@@ -157,7 +159,7 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
             id = stuff[0]
 
             # Only for debugging_________
-            if id == ID or id in banned_ids:
+            if id in banned_ids:
                 c += 1
                 continue
             # Only for debugging_________
@@ -165,7 +167,10 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
             pind = backward_linear_s(junc, fut.true_paths[id])
             if pind == None:
                 pind = 0
-            pos = fut.paths[id][pind]
+            try:
+                pos = fut.paths[id][pind]
+            except:
+                raise Exception(pind, len(paths[id]), len(fut.true_paths[id]), junc)
             timing = fut.timing_paths[id][pind]
             dist = road.get_car_dist(pos)
 
@@ -175,9 +180,9 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
             if pind == len(fut.true_paths[id]) - 3:
                 action = "p"
 
-            elem = (id, action, stuff[1], junc, road.to)
+            elem = (id, action, stuff[1] - 1, junc, road.to)
             binary_insert_q(elem, queue)
-            preds[stuff[0]] = stuff[1]
+            preds[stuff[0]] = stuff[1] - 1
             # ID, action, time, junction_start, junction_to
 
             paths[id] = fut.paths[id][0 : pind + 1]
@@ -188,12 +193,15 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
     # Get parkers
     # Not now :sob
 
+    # if stgs.time == 687:
+    #    for entry, road in new_roads.items():
+    #        print("Entry:", entry, road.estimation)
+    #    print(queue)
+
     while len(queue) > 0:
         id, action, timing, start, to = queue.pop(0)
 
         if action == "t":
-            if start == to:
-                print(start)
             can_cross = predict_junc_crossable(
                 id, timing, preds, paths, start, to, new_junction, new_roads[to]
             )
@@ -208,7 +216,7 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
                 finish_cross = fut.predict_turn(id, timing, paths)
 
                 dist = new_roads[to].get_car_dist(finish_cross[1])
-                new_roads[to].add_car_junc_estimation(ID, time, dist - stgs.car_speed)
+                new_roads[to].add_car_junc_estimation(id, time, dist - stgs.car_speed)
 
                 # Addding to paths
                 paths[id].append(junc)
@@ -233,7 +241,7 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
                 if arrivals_ind[start] < len(arr):
                     id_b, timing_b, to_b = arr[arrivals_ind[start]]
                     timing_b -= 1
-                    if timing_b < timing + stgs.car_dist / stgs.car_speed:
+                    if timing_b < timing - stgs.car_dist / stgs.car_speed:
                         timing_b = timing + stgs.car_dist / stgs.car_speed
 
                     ind = backward_linear_s(junc, fut.true_paths[id_b])
@@ -248,7 +256,25 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
                 preds[id] = can_cross[2]
 
         elif action == "r":
-            # Check if car in front
-            pass
+            dir = get_abs_direction(start, to)
+            road = new_roads[dir]
+            line = predict_car_in_front(
+                id, preds, timing, paths[id][-1], paths, timing_paths, road
+            )
+
+            if line == None:
+                elem = (id, "c", timing + 1, start, to)
+                binary_insert_q(elem, queue)
+                preds[id] = timing + 1
+            else:
+                elem = (id, "r", line[2], start, to)
+                preds[id] = line[2]
+
+        elif action == "c":
+            dir = get_abs_direction(start, to)
+            road = new_roads[dir]
+            # Just empty the road
+            road.add_car_exit(id, time)
+
         elif action == "p":
             pass
