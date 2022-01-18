@@ -1,3 +1,4 @@
+from importlib.resources import path
 from future2 import *
 import settings as stgs
 import future as fut
@@ -108,6 +109,9 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
             paths[id] = fut.paths[id][0:ind]
             timing_paths[id] = fut.timing_paths[id][0:ind]
 
+            # if stgs.time == 678:
+            #     print(id, elem)
+
             last_left[stuff[2]] = min(stuff[1], last_left[stuff[2]])
 
             banned_ids.add(id)
@@ -128,6 +132,7 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
         timing_paths[id] = fut.timing_paths[id][0:ind]
 
         next_entry = fut.dir_paths[id][ind + 1]
+
         elem = (id, "t", time_leave, entry_from, next_entry)
         binary_insert_q(elem, queue)
 
@@ -144,18 +149,21 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
 
         capacity, timing, type = road.timely_capacity[ind]
 
-        if not (timing == time and type == "i"):
-            ind -= 1
-            if ind >= 0:
-                capacity = road.timely_capacity[ind][0]
-            else:
-                capacity = road.timely_capacity[0][0] - 1
+        ind -= 1
+        if ind >= 0:
+            capacity = road.timely_capacity[ind][0]
+        else:
+            capacity = road.timely_capacity[0][0] - 1
 
         index = binary_search_ds(last_left[entry] - 1, road.leave)
 
         c = 1
         while c <= capacity:
             i = index + c - 1
+
+            if i >= len(stuff):
+                break
+
             stuff = road.leave[i]
 
             # Get estimation
@@ -170,12 +178,11 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
             pind = backward_linear_s(junc, fut.true_paths[id])
             if pind == None:
                 pind = 0
-            try:
-                pos = fut.paths[id][pind]
-            except:
-                raise Exception(pind, len(paths[id]), len(fut.true_paths[id]), junc)
+
+            pos = fut.paths[id][pind]
             timing = fut.timing_paths[id][pind]
-            dist = road.get_car_dist(pos)
+
+            dist = road.get_car_dist(pos) - fut.junction_space
 
             new_roads[entry].add_car_junc_estimation(id, timing, dist)
 
@@ -194,7 +201,16 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
             c += 1
 
     # Get parkers
-    # Not now :sob
+    # NOW RIP
+
+    if stgs.time == 15237 and ID == 16:
+        for entry in entries:
+            print(
+                "Entry:",
+                entry,
+                new_roads[entry].estimation,
+            )
+        print(ID, queue)
 
     while len(queue) > 0:
         id, action, timing, start, to = queue.pop(0)
@@ -203,6 +219,7 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
             can_cross = predict_junc_crossable(
                 id, timing, preds, paths, start, to, new_junction, new_roads[to]
             )
+
             if can_cross[2] == timing:
                 if id == ID:
                     return timing
@@ -213,21 +230,35 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
                 # Add to next road
                 finish_cross = fut.predict_turn(id, timing, paths)
 
-                dist = new_roads[to].get_car_dist(finish_cross[1])
-                new_roads[to].add_car_junc_estimation(id, time, dist - stgs.car_speed)
+                dist = new_roads[to].get_car_dist(finish_cross[1]) - fut.junction_space
+                new_roads[to].add_car_junc_estimation(id, finish_cross[2], dist)
 
                 # Addding to paths
-                paths[id].append(junc)
-                timing_paths[id].append(timing)
+                paths[id].append(finish_cross[1])
+                timing_paths[id].append(finish_cross[2])
 
                 if len(paths[id]) + 1 == len(fut.dir_paths[id]):
-                    pred = fut.predict_park(id, paths, timing_paths)
+                    next_action = "p"
                 else:
-                    pred = fut.predict_intersection(id, paths, timing_paths)
+                    next_action = "r"
 
-                elem = (id, "r", pred[2], junc, new_roads[to].to)
+                # Special shit
+                if finish_cross[2] == fut.timing_paths[id][len(paths[id]) - 1]:
+                    if next_action == "p":
+                        pred = fut.timing_paths[id][-1] - 32
+                    else:
+                        turn = fut.true_paths[id][len(paths[id]) + 1][1]
+                        time_turn = fut.time_turn[turn] + 1
+                        pred = fut.timing_paths[id][len(paths[id]) + 1] - time_turn
+                else:
+                    if next_action == "p":
+                        pred = fut.predict_park(id, paths, timing_paths)[2]
+                    else:
+                        pred = fut.predict_intersection(id, paths, timing_paths)[2]
+                elem = (id, next_action, pred, junc, new_roads[to].to)
+
                 binary_insert_q(elem, queue)
-                preds[id] = pred[2]
+                preds[id] = pred
 
                 # Predict next guy try to cross
                 if start == entry_from:
@@ -248,6 +279,8 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
 
                     elem = (id_b, "t", timing_b + 1, start, to_b)
                     binary_insert_q(elem, queue)
+
+                    preds[id_b] = elem[2]
             else:
                 elem = (id, "t", can_cross[2], start, to)
                 binary_insert_q(elem, queue)
@@ -264,15 +297,38 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
                 elem = (id, "c", timing + 1, start, to)
                 binary_insert_q(elem, queue)
                 preds[id] = timing + 1
+
+                paths[id].append(to)
+                timing_paths[id].append(timing)
+
             else:
                 elem = (id, "r", line[2], start, to)
+                binary_insert_q(elem, queue)
                 preds[id] = line[2]
 
         elif action == "c":
             dir = get_abs_direction(start, to)
             road = new_roads[dir]
+
+            paths[id].append(to)
+            timing_paths[id].append(timing)
+
             # Just empty the road
-            road.add_car_exit(id, time)
+            road.add_car_exit(id, timing)
 
         elif action == "p":
-            pass
+            # Get the car line
+            # If works, empty the road
+            dir = get_abs_direction(start, to)
+            road = new_roads[dir]
+            pos = paths[id][-1]
+            park_line = predict_car_in_front(
+                id, preds, timing, pos, paths, timing_paths, road
+            )
+
+            if park_line == None:
+                road.add_car_exit(id, timing)
+            else:
+                elem = (id, "p", park_line[2], start, to)
+                binary_insert_q(elem, queue)
+                preds[id] = park_line[2]

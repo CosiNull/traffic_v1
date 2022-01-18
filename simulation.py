@@ -13,3 +13,6 @@ while running:
     for i in range(stgs.play_speed):
         stgs.time += 1
         rv.update_cars()
+
+    if stgs.time > 15150:
+        stgs.play_speed = 1

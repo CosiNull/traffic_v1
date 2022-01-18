@@ -506,6 +506,7 @@ class Car:
             real = fut.junctions[self.last_intersection].crossing_enter[ind][1]
             if timing != real:
                 print("_" * 20)
+                print("ID", self.id)
                 print(stgs.time, timing, real)
                 print("IDEN", self.last_intersection, self.color)
                 print(junction_data.crossing)

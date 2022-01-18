@@ -112,3 +112,56 @@ def predict_car_in_front(ID, preds, time, pos, paths, timing_paths, road):
             return (ID, pos, timing)
 
     return None
+
+
+def predict_park_line(ID, preds, paths, road):
+
+    # 1. Check the current line
+    # 1.1 Check how many cars were before my_car and substract by curr_capacity
+    # 2. See if the line exceeds the goal: Do the substraction math
+    # 3. Calculate how many cars need to move to attain goal
+    # 4. Get N_th earliest
+
+    # Step 1.
+    cars_after = 0
+    j = 0
+    while True:
+        i = -1 - j - cars_after
+        ID_b = road.estimation[i][0]  # NOTE THERE
+        if len(paths[ID_b]) == len(fut.true_paths[ID_b]):
+            j += 1
+        elif ID_b == ID:
+            break
+        else:
+            cars_after += 1
+    cars_before = road.curr_capacity - 1 - cars_after
+
+    # Step 2.
+    curr_dir = fut.dir_paths[ID][len(paths[ID])]
+    u_s = 0 if curr_dir in {"r", "l"} else 1
+    tot_car_len = stgs.min_dist + stgs.car_len
+    line_len = cars_before * tot_car_len + stgs.node_width / 2 + stgs.car_len / 2
+    goal_dist = abs(road.to[u_s] - fut.true_paths[ID][-1][0][u_s]) + stgs.park_dist
+
+    if goal_dist >= line_len:
+        return None
+    # Step 4.
+    res = []
+    examined_cars = 0
+    while examined_cars < cars_before:
+        i -= 1
+        ID_b = road.estimation[i][0]
+        if len(paths[ID_b]) == len(fut.true_paths[ID_b]):
+            continue
+        else:
+            binary_insertion((ID_b, preds[ID_b]), res, lambda x: x[1])
+            examined_cars += 1
+
+    # Step 3.
+    dist_to_travel = line_len - goal_dist
+    cars_to_move = math.ceil(dist_to_travel / tot_car_len)
+    ID_b, time = res[cars_to_move]
+    timing = time + math.ceil(dist_to_travel / stgs.car_speed)
+    timing = timing + 1 if ID < ID_b else timing
+
+    return (ID, 4, timing)
