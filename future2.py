@@ -75,7 +75,7 @@ class Intersection:
         func = lambda x: x[1]
         binary_insertion(elem, arr, func)
 
-        self.entry_cross[entry].append((ID, time, entry_to))
+        binary_insertion((ID, time, entry_to), self.entry_cross[entry], func)
 
         time_crossing = time_turn[relative_dir[opposite_dir[entry]][entry_to]]
         elem_2 = (ID, time + time_crossing, entry, entry_to)

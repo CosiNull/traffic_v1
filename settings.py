@@ -44,3 +44,4 @@ road_center = 4
 time = 0
 
 car_dist = car_len + min_dist
+play_speed = 6

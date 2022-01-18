@@ -10,6 +10,6 @@ while running:
     rv.draw_cars()
     rv.check_keys()
 
-    for i in range(3):
+    for i in range(stgs.play_speed):
         stgs.time += 1
         rv.update_cars()

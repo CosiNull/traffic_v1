@@ -139,20 +139,23 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
     for entry, road in true_roads.items():
         ind = binary_search_ds(last_left[entry] - 1, road.timely_capacity)
 
-        if ind >= len(road.timely_capacity):
+        if ind >= len(road.timely_capacity) or entry == entry_from:
             continue
 
         capacity, timing, type = road.timely_capacity[ind]
 
         if not (timing == time and type == "i"):
-            capacity = road.timely_capacity[ind - 1][0]
+            ind -= 1
+            if ind >= 0:
+                capacity = road.timely_capacity[ind][0]
+            else:
+                capacity = road.timely_capacity[0][0] - 1
 
         index = binary_search_ds(last_left[entry] - 1, road.leave)
 
         c = 1
         while c <= capacity:
-            i = index - c
-
+            i = index + c - 1
             stuff = road.leave[i]
 
             # Get estimation
@@ -192,11 +195,6 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
 
     # Get parkers
     # Not now :sob
-
-    # if stgs.time == 687:
-    #    for entry, road in new_roads.items():
-    #        print("Entry:", entry, road.estimation)
-    #    print(queue)
 
     while len(queue) > 0:
         id, action, timing, start, to = queue.pop(0)

@@ -505,8 +505,15 @@ class Car:
             )
             real = fut.junctions[self.last_intersection].crossing_enter[ind][1]
             if timing != real:
+                print("_" * 20)
                 print(stgs.time, timing, real)
                 print("IDEN", self.last_intersection, self.color)
+                print(junction_data.crossing)
+                # ind = fut.linear_search(
+                #    10, fut.junctions[self.last_intersection].crossing_enter
+                # )
+                # print(fut.junctions[self.last_intersection].crossing_enter[ind][1])
+                print("_" * 20)
 
         # Go check who is where
         crossable = all(
