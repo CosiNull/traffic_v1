@@ -28,14 +28,6 @@ class Parking_Lot:
             dist = abs(park[0][coord_index] - pos[coord_index])
             min_dist = park[1] / 2 + car_length / 2 + self.min_park_dist
 
-            """
-            if park[2] == ID:
-                print("ok...")
-                print(pos, park[0])
-                if park[0] == pos:
-                    print("YOOO")
-            """
-
             if dist < min_dist and ID != park[2]:
                 return False
 

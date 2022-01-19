@@ -387,7 +387,6 @@ def get_intersection_pos(ID, paths):
     curr_dir = dir_paths[ID][count]
     pos = paths[ID][count - 1]
 
-    # If road is empty
     u_s = 0 if curr_dir in {"r", "l"} else 1
     road_ang_u = 1 if curr_dir in {"l", "u"} else -1
 

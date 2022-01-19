@@ -117,12 +117,26 @@ class Car:
         start_dir = pf.angle_to_dir[self.angle]
 
         # Before its paths
-        # self.time_pred = ex.predict_first_node(cars, self.id)
+        exit_time = ex.predict_first_node(cars, self.id) + 1
 
         if func == "dj":
             self.path = pf.pathfind_dj(trf.road_network, start, goal, start_dir)[0]
         elif func == "as":
             self.path = pf.pathfind_as(
+                trf.road_network, start, goal, start_dir, true_goal
+            )[0]
+            if self.id == 0:
+                self.path2 = mlt.pathfind_mlt(
+                    trf.road_network,
+                    start,
+                    goal,
+                    start_dir,
+                    true_goal,
+                    exit_time,
+                    self.id,
+                )[0]
+        elif func == "mlt":
+            self.path = mlt.pathfind_mlt(
                 trf.road_network, start, goal, start_dir, true_goal
             )[0]
         else:
@@ -156,6 +170,10 @@ class Car:
 
         add_dir(self.path, 0, start_dir)
 
+        if self.id == 0:  #
+            self.path2.append(true_goal)  #
+            add_dir(self.path2, 0, start_dir)  #
+
         self.predict_path(cars)
 
     # Future predicting_________________________________________________________________________
@@ -168,6 +186,18 @@ class Car:
             pf.angle_to_dir[self.angle],
         )
         fut.predict_path(cars, self.id)
+
+        if self.id == 0:
+            print(fut.timing_paths[self.id][-1])
+            fut.save_true_path(
+                self.id,
+                self.path2,
+                self.init_pos,
+                self.target_pos,
+                pf.angle_to_dir[self.angle],
+            )
+            fut.predict_path(cars, self.id)
+            print(fut.timing_paths[self.id][-1])
 
     # The Holy Update Method_____________________________________________________________
     def update(self):
@@ -489,6 +519,7 @@ class Car:
         start_inter = trf.inverse_dir[start_dir]
         next_dir = trf.abs_dir(start_dir, self.path[0])
 
+        """
         if not self.checked:
             self.checked = True
             path_so_far = fut.paths[self.id][0 : self.c + 1]
@@ -515,6 +546,7 @@ class Car:
                 # )
                 # print(fut.junctions[self.last_intersection].crossing_enter[ind][1])
                 print("_" * 20)
+            """
 
         # Go check who is where
         crossable = all(

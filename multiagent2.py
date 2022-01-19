@@ -59,8 +59,13 @@ def predict_junc_crossable(ID, time, preds, paths, m_e, m_e_t, junc, road):
     return (ID, 0, timing)
 
 
-def predict_car_in_front(ID, preds, time, pos, paths, timing_paths, road):
-    junction = fut.true_paths[ID][len(paths[ID])][0]
+def predict_car_in_front(ID, preds, time, pos, paths, timing_paths, road, junc=None):
+
+    if junc == None:
+        junction = fut.true_paths[ID][len(paths[ID])][0]
+    else:
+        junction = junc
+
     ind = backward_linear_s(ID, road.estimation, step=-1)
 
     # Making sure that the car before has not parked
@@ -114,7 +119,7 @@ def predict_car_in_front(ID, preds, time, pos, paths, timing_paths, road):
     return None
 
 
-def predict_park_line(ID, preds, paths, road):
+def predict_park_line(ID, preds, paths, road, curr_dir):
 
     # 1. Check the current line
     # 1.1 Check how many cars were before my_car and substract by curr_capacity
@@ -137,11 +142,12 @@ def predict_park_line(ID, preds, paths, road):
     cars_before = road.curr_capacity - 1 - cars_after
 
     # Step 2.
-    curr_dir = fut.dir_paths[ID][len(paths[ID])]
     u_s = 0 if curr_dir in {"r", "l"} else 1
     tot_car_len = stgs.min_dist + stgs.car_len
     line_len = cars_before * tot_car_len + stgs.node_width / 2 + stgs.car_len / 2
-    goal_dist = abs(road.to[u_s] - fut.true_paths[ID][-1][0][u_s]) + stgs.park_dist
+    goal_dist = (
+        abs(road.to[u_s] - road.start[u_s] - fut.junction_space) + stgs.park_dist
+    )
 
     if goal_dist >= line_len:
         return None

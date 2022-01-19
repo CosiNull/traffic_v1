@@ -14,5 +14,5 @@ while running:
         stgs.time += 1
         rv.update_cars()
 
-    if stgs.time > 15150:
+    if stgs.time > 4300:
         stgs.play_speed = 1

@@ -112,7 +112,7 @@ class Road:
         binary_insertion(elem, arr, func=func)
         self.curr_capacity += 1
 
-        binary_insertion((self.curr_capacity, time, "i"), self.timely_capacity, func)
+        binary_insertion((self.curr_capacity, time, ID), self.timely_capacity, func)
 
     def add_car_exit(self, ID, time):
         elem = (ID, time)
@@ -122,7 +122,7 @@ class Road:
         binary_insertion(elem, arr, func)
         self.curr_capacity -= 1
 
-        binary_insertion((self.curr_capacity, time, "d"), self.timely_capacity, func)
+        binary_insertion((self.curr_capacity, time, ID), self.timely_capacity, func)
 
     def delete_line(self, time):
         self.line.append(self.line[-1][0], time, self.line[-1][2] - 1)
