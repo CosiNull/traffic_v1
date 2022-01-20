@@ -44,4 +44,7 @@ road_center = 4
 time = 0
 
 car_dist = car_len + min_dist
-play_speed = 5
+play_speed = 4
+
+# car_evolution
+car_evolution = []

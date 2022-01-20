@@ -1,5 +1,6 @@
 import road_visuals as rv
 import settings as stgs
+import pickle
 
 running = True
 while running:
@@ -14,5 +15,9 @@ while running:
         stgs.time += 1
         rv.update_cars()
 
-    if stgs.time > 4300:
-        stgs.play_speed = 1
+    if stgs.time > 15000:
+        break
+
+file_to_store = open("1NORM32200.pickle", "wb")
+pickle.dump(stgs.car_evolution, file_to_store)
+file_to_store.close()

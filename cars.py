@@ -125,6 +125,8 @@ class Car:
             self.path = pf.pathfind_as(
                 trf.road_network, start, goal, start_dir, true_goal
             )[0]
+
+            """
             if self.id == 0:
                 self.path2 = mlt.pathfind_mlt(
                     trf.road_network,
@@ -135,9 +137,17 @@ class Car:
                     exit_time,
                     self.id,
                 )[0]
+            """
+
         elif func == "mlt":
             self.path = mlt.pathfind_mlt(
-                trf.road_network, start, goal, start_dir, true_goal
+                trf.road_network,
+                start,
+                goal,
+                start_dir,
+                true_goal,
+                exit_time,
+                self.id,
             )[0]
         else:
             raise Exception("ERROR: Bad 'func' Parameter")
@@ -170,9 +180,11 @@ class Car:
 
         add_dir(self.path, 0, start_dir)
 
+        """
         if self.id == 0:  #
             self.path2.append(true_goal)  #
             add_dir(self.path2, 0, start_dir)  #
+        """
 
         self.predict_path(cars)
 
@@ -187,6 +199,7 @@ class Car:
         )
         fut.predict_path(cars, self.id)
 
+        """
         if self.id == 0:
             print(fut.timing_paths[self.id][-1])
             fut.save_true_path(
@@ -198,6 +211,7 @@ class Car:
             )
             fut.predict_path(cars, self.id)
             print(fut.timing_paths[self.id][-1])
+        """
 
     # The Holy Update Method_____________________________________________________________
     def update(self):
@@ -315,6 +329,8 @@ class Car:
             # self.color = (255, 255, 255)
             self.path = None
             self.state = 3
+
+            stgs.car_evolution.append(stgs.time)
         elif not type(self.path[0]) == str:
             self.advance_to_dest()
         else:
@@ -520,9 +536,9 @@ class Car:
         next_dir = trf.abs_dir(start_dir, self.path[0])
 
         """
-        if not self.checked:
+        if not self.checked and self.c + 3 < len(fut.true_paths[self.id]):
             self.checked = True
-            path_so_far = fut.paths[self.id][0 : self.c + 1]
+            path_so_far = fut.paths[self.id][0 : self.c + 2]
             timing = mlt.predict_time_cross(
                 self.id,
                 stgs.time,
@@ -531,10 +547,11 @@ class Car:
                 next_dir,
                 path_so_far,
             )
-            ind = fut.linear_search(
-                self.id, fut.junctions[self.last_intersection].crossing_enter
-            )
-            real = fut.junctions[self.last_intersection].crossing_enter[ind][1]
+            real = fut.timing_paths[self.id][self.c + 2]
+            # ind = fut.linear_search(
+            #    self.id, fut.junctions[self.last_intersection].crossing_enter
+            # )
+            # real = fut.junctions[self.last_intersection].crossing_enter[ind][1]
             if timing != real:
                 print("_" * 20)
                 print("ID", self.id)
@@ -546,7 +563,7 @@ class Car:
                 # )
                 # print(fut.junctions[self.last_intersection].crossing_enter[ind][1])
                 print("_" * 20)
-            """
+        """
 
         # Go check who is where
         crossable = all(
@@ -580,7 +597,7 @@ class Car:
             trf.roads[(intersection_from, new_dir)].add_car(self)
 
             # Crossing_enter
-
+            """
             junc = self.last_intersection
             ind = fut.linear_search(self.id, fut.junctions[junc].crossing_enter)
             timing = fut.junctions[junc].crossing_enter[ind][1]
@@ -590,6 +607,7 @@ class Car:
                 print("_______________________________")
                 print(yo, junc, self.id, self.color)
                 print(timing, stgs.time)
+            """
 
             """"
             # Road_exit

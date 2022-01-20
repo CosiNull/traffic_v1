@@ -43,7 +43,7 @@ def multiagent_a_star(graph, start, end, start_dir, true_goal, time, ID):
 
             extra_time = (
                 predict_time_cross(
-                    ID, timing[node], node, entry_from, entry_to, path_so_far
+                    ID, timing[node] + 1, node, entry_from, entry_to, path_so_far
                 )
                 + 1
             )
@@ -253,12 +253,7 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
             time_left = fut.timing_paths[id][0]
             if time_left > time-52:
     """
-    """
-    if ID == 142 and stgs.time == 4695:
-        for entry, road in new_roads.items():
-            print("Entry", entry, road.estimation)
-        print(queue)
-    """
+
     waiters = set()
 
     while len(queue) > 0:
@@ -272,14 +267,15 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
             if can_cross[2] == timing:
                 if id == ID:
                     return predict_road_arrive(
-                        id,
+                        ID,
                         timing,
                         entry_from,
                         entry_to,
                         new_roads[entry_to],
                         preds,
                         waiters,
-                        path_so_far,
+                        paths,
+                        timing_paths,
                     )
 
                 # Register to crossing
@@ -385,8 +381,10 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
 
             if park_line == None:
                 road.add_car_exit(id, timing)
+                paths[id] = fut.paths[id]
+                timing_paths[id] = fut.timing_paths[id]
                 preds[id] = None
-                print(id, "intersect")
+                # print(id, "intersect")
             else:
                 elem = (id, "p", park_line[2], start, to)
                 binary_insert_q(elem, queue)
@@ -394,7 +392,7 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
 
 
 def predict_road_arrive(
-    ID, time, entry_from, entry_to, road, preds, waiting, path_so_far
+    ID, time, entry_from, entry_to, road, preds, waiting, paths, timing_paths
 ):
     # Get time cross and next pos
     # Add to estimations
@@ -402,16 +400,14 @@ def predict_road_arrive(
     # Add to queue with their respective preds
     # Go till no one in front
     # return the time
-    paths = [None for i in range(stgs.num_car)]
-    timing_paths = [None for i in range(stgs.num_car)]
     # __________________________________________
     current_dir = trf.inverse_dir[entry_from]
     turn = relative_dir[current_dir][entry_to]
-    time_turn = time + fut.time_turn[turn]
+    time_turn = fut.time_turn[turn]
     time_arrive = time + time_turn
 
     u_s = 0 if entry_to in {"r", "l"} else 1
-    road_ang_u = 1 if entry_to in {"l", "u"} else -1
+    road_ang_u = -1 if entry_to in {"l", "u"} else 1
 
     s_s = 1 if u_s == 0 else 0
     road_ang_s = 1 if entry_to in {"r", "u"} else -1
@@ -426,10 +422,9 @@ def predict_road_arrive(
     dist = road.get_car_dist(next_pos) - fut.junction_space
     road.add_car_junc_estimation(ID, time_arrive, dist)
 
-    my_pred = dist / stgs.car_speed
+    my_pred = dist / stgs.car_speed + time_arrive
     preds[ID] = my_pred
 
-    paths[ID] = path_so_far
     # ____________________________________________
     ind = backward_linear_s(ID, road.estimation)
 
@@ -444,22 +439,18 @@ def predict_road_arrive(
             j += 1
             continue
 
-        if id in waiting:  # Temporary
-            preds[id] -= 1
-
         pind = backward_linear_s(road.start, fut.true_paths[id])
         if pind == None:
             paths[id] = fut.paths[id][0:1]
             timing_paths[id] = fut.timing_paths[id][0:1]
         else:
-            paths[id] = fut.paths[id][0 : pind + 2]
-            timing_paths[id] = fut.timing_paths[id][0 : pind + 2]
+            paths[id] = fut.paths[id][0 : pind + 1]
+            timing_paths[id] = fut.timing_paths[id][0 : pind + 1]
 
         if len(paths[id]) + 1 == len(fut.true_paths[id]):
-            action = "r"
-        else:
             action = "p"
-
+        else:
+            action = "r"
         elem = (id, action, preds[id])
 
         binary_insert_q(elem, queue)
@@ -510,9 +501,9 @@ def predict_road_arrive(
             park_line = predict_park_line(id, preds, paths, road, entry_to)
 
             if park_line == None:
-                road.add_car_exit(id, timing)
-                paths[id].append(road.to)
-                timing_paths[id].append(timing)
+                paths[id] = fut.paths[id]
+                timing_paths[id] = fut.timing_paths[id]
+                preds[id] = None
             else:
                 elem = (id, "p", park_line[2])
                 binary_insert_q(elem, queue)

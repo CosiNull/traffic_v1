@@ -85,7 +85,7 @@ def predict_car_in_front(ID, preds, time, pos, paths, timing_paths, road, junc=N
     if junction_b == junction:
         dist = stgs.car_len + stgs.min_dist
         timing = preds[ID_b] + int(dist / stgs.car_speed)
-        timing = timing + 1 if action_b == "i" and ID < ID_b else timing
+        timing = timing + 1 if action_b == "i" else timing  # and ID < ID_b
         timing = (
             timing - 1 if ID > ID_b else timing
         )  # Special technicality with update order
