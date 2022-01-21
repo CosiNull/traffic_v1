@@ -15,9 +15,5 @@ while running:
         stgs.time += 1
         rv.update_cars()
 
-    if stgs.time > 15000:
+    if stgs.count == stgs.tested:
         break
-
-file_to_store = open("1NORM32200.pickle", "wb")
-pickle.dump(stgs.car_evolution, file_to_store)
-file_to_store.close()

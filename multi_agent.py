@@ -6,6 +6,7 @@ import math
 import traffic as trf
 from pathfinding import *
 from multiagent2 import *
+from copy import deepcopy
 
 
 # ___The code
@@ -102,7 +103,7 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
     paths = [[] for i in range(stgs.num_car)]
     timing_paths = [[] for i in range(stgs.num_car)]
 
-    true_roads = {entry: fut.roads[(junc, entry)] for entry in entries}
+    true_roads = {entry: deepcopy(fut.roads[(junc, entry)]) for entry in entries}
     new_roads = {entry: fut.Road(junc, true_roads[entry].to) for entry in entries}
     last_left = {entry_to: time for entry_to in entries}
 
@@ -125,9 +126,16 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
         arr = true_junction.entry_cross[entry]
         index = binary_search_ds(time - 52, arr)
 
-        if index < len(arr):
+        if -1 < index < len(arr):
             stuff = arr[index]
             id = stuff[0]
+            if id == ID:  # ________
+                index += 1
+                if index < len(arr):
+                    stuff = arr[index]
+                    id = stuff[0]
+                else:
+                    continue
         else:
             continue
 
@@ -139,8 +147,8 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
             arrivals_ind[entry] = index
 
             ind = backward_linear_s(junc, fut.true_paths[id])
-            paths[id] = fut.paths[id][0:ind]
-            timing_paths[id] = fut.timing_paths[id][0:ind]
+            paths[id] = deepcopy(fut.paths[id][0:ind])
+            timing_paths[id] = deepcopy(fut.timing_paths[id][0:ind])
 
             last_left[stuff[2]] = min(stuff[1], last_left[stuff[2]])
 
@@ -161,8 +169,8 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
 
         if index < len(arr) and arr[index][1] < time and time - time_leave <= 52:
             ind = backward_linear_s(junc, fut.true_paths[id])
-            paths[id] = fut.paths[id][0:ind]
-            timing_paths[id] = fut.timing_paths[id][0:ind]
+            paths[id] = deepcopy(fut.paths[id][0:ind])
+            timing_paths[id] = deepcopy(fut.timing_paths[id][0:ind])
 
             next_entry = fut.dir_paths[id][ind + 1]
 
@@ -236,8 +244,10 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
             preds[stuff[0]] = stuff[1] - 1
             # ID, action, time, junction_start, junction_to
 
-            paths[id] = fut.paths[id][0 : pind + 1]
-            timing_paths[id] = fut.timing_paths[id][0 : pind + 1]
+            paths[id] = deepcopy(fut.paths[id][0 : pind + 1])
+            timing_paths[id] = deepcopy(fut.timing_paths[id][0 : pind + 1])
+
+            banned_ids.add(id)
 
             c += 1
 
@@ -255,7 +265,6 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
     """
 
     waiters = set()
-
     while len(queue) > 0:
         id, action, timing, start, to = queue.pop(0)
 
@@ -321,20 +330,26 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
                 arrivals_ind[start] += 1
                 arr = true_junction.entry_cross[start]
 
-                if arrivals_ind[start] < len(arr):
+                while arrivals_ind[start] < len(arr):
                     id_b, timing_b, to_b = arr[arrivals_ind[start]]
+
+                    if id_b in banned_ids:
+                        arrivals_ind[start] += 1
+                        continue
+
                     timing_b -= 1
                     if timing_b < timing - stgs.car_dist / stgs.car_speed:
                         timing_b = timing + stgs.car_dist / stgs.car_speed
 
                     ind = backward_linear_s(junc, fut.true_paths[id_b])
-                    paths[id_b] = fut.paths[id][0:ind]
-                    timing_paths[id_b] = fut.timing_paths[id][0:ind]
+                    paths[id_b] = deepcopy(fut.paths[id][0:ind])
+                    timing_paths[id_b] = deepcopy(fut.timing_paths[id][0:ind])
 
                     elem = (id_b, "t", timing_b + 1, start, to_b)
                     binary_insert_q(elem, queue)
 
                     preds[id_b] = elem[2]
+                    break
             else:
                 elem = (id, "t", can_cross[2], start, to)
                 binary_insert_q(elem, queue)
@@ -381,8 +396,8 @@ def predict_time_cross(ID, time, junc, entry_from, entry_to, path_so_far):
 
             if park_line == None:
                 road.add_car_exit(id, timing)
-                paths[id] = fut.paths[id]
-                timing_paths[id] = fut.timing_paths[id]
+                paths[id] = deepcopy(fut.paths[id])
+                timing_paths[id] = deepcopy(fut.timing_paths[id])
                 preds[id] = None
                 # print(id, "intersect")
             else:
@@ -441,11 +456,11 @@ def predict_road_arrive(
 
         pind = backward_linear_s(road.start, fut.true_paths[id])
         if pind == None:
-            paths[id] = fut.paths[id][0:1]
-            timing_paths[id] = fut.timing_paths[id][0:1]
+            paths[id] = deepcopy(fut.paths[id][0:1])
+            timing_paths[id] = deepcopy(fut.timing_paths[id][0:1])
         else:
-            paths[id] = fut.paths[id][0 : pind + 1]
-            timing_paths[id] = fut.timing_paths[id][0 : pind + 1]
+            paths[id] = deepcopy(fut.paths[id][0 : pind + 1])
+            timing_paths[id] = deepcopy(fut.timing_paths[id][0 : pind + 1])
 
         if len(paths[id]) + 1 == len(fut.true_paths[id]):
             action = "p"
@@ -501,8 +516,8 @@ def predict_road_arrive(
             park_line = predict_park_line(id, preds, paths, road, entry_to)
 
             if park_line == None:
-                paths[id] = fut.paths[id]
-                timing_paths[id] = fut.timing_paths[id]
+                paths[id] = deepcopy(fut.paths[id])
+                timing_paths[id] = deepcopy(fut.timing_paths[id])
                 preds[id] = None
             else:
                 elem = (id, "p", park_line[2])

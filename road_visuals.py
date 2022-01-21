@@ -21,9 +21,9 @@ colors = [
     (0, 128, 128),
     (255, 140, 0),
 ]
-
+#
 cars = [
-    c.Car(i, rdn.choice(colors), parktime=rdn.randint(0, 500), autonomous=False)
+    c.Car(i, rdn.choice(colors), rdn.randint(0, 500), autonomous=False)
     for i in range(stgs.num_car)
 ]  # 300
 
@@ -203,6 +203,9 @@ def update_cars():
                         continue
                     dist, target_pos = park_slot
                     car.find_path(goal, true_goal, cars, dist, target_pos)
+                    if car.id < stgs.tested and car.path == None:
+                        print("Recalculated", car.id)
+
             else:
                 car.enter_road()
         else:

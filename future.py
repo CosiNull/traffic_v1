@@ -71,8 +71,12 @@ def predict_path(cars, subtime):
 
     # The Great Loop
     while len(queue) > 0:
+
         ID, pos, time = queue.pop(0)
         junction, action = true_paths[ID][len(paths[ID])]
+
+        if time - stgs.time > 6000:
+            return True
 
         if action == "e":
             pred = predict_road_entry(
@@ -124,7 +128,6 @@ def predict_path(cars, subtime):
         elif action in {"l", "r", "u"}:
             crossable_pred = predict_junc_crossable(ID, time, preds, paths)
             if crossable_pred[2] == time:  # Let's cross
-
                 # Predicting next cross
                 finish_cross = predict_turn(ID, time, paths)
                 add_car_path(*finish_cross)
@@ -177,6 +180,8 @@ def predict_path(cars, subtime):
                 binary_insert_q(line_park, queue)
 
                 preds[ID] = line_park[2]
+
+    return False
 
 
 def get_road_cars_pos(ID, time, preds, paths, timing_paths):
