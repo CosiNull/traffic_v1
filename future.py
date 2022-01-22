@@ -706,7 +706,9 @@ def get_entry_road(node_to, direc):
         if trf.entry_dir(neighbour, node_to) == direc:
             return roads[(neighbour, direc)]
 
-    raise Exception("Error in determinating Intersection for road entry")
+    raise Exception(
+        "Error in determinating Intersection for road entry", node_to, direc
+    )
 
 
 # ________________________________________________________________

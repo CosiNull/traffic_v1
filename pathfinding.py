@@ -145,12 +145,7 @@ class Dheap:
 # _________________________________________________________
 
 
-def dijkstra(
-    graph,
-    start=tuple,
-    end=tuple,
-    start_dir=str,
-):
+def dijstrka(graph, start, end, start_dir, true_goal):
     dist = {node: math.inf for node in graph.nodes}
     prev = {}
 
@@ -159,31 +154,27 @@ def dijkstra(
     pq.insert((start, 0))
 
     while len(pq()) > 0:
-        data = pq.poll()
-        node = data[0]
-        dest_dist = data[1]
-
+        node = pq.poll()[0]
         if node == end:
-            break
+            return (dist, prev)
 
-        for connection in graph.connections[node]:
-            neighbour = connection[0]
-
+        for neighbour, edge in graph.connections[node]:
             if node in prev and prev[node] == neighbour:
-                # print(node, prev[node], neighbour)
                 continue
             elif node == start and opposite_dir[start_dir] == get_abs_direction(
                 node, neighbour
             ):
                 continue
+            elif node == true_goal and neighbour == end:  # No U_turns towards the goal
+                continue
 
-            current_dist = dest_dist + connection[1].length
+            current_dist = dist[node] + edge.length
             if current_dist < dist[neighbour]:
                 dist[neighbour] = current_dist
                 pq.insert((neighbour, current_dist))
                 prev[neighbour] = node
 
-    return (dist, prev)
+    return (None, None)
 
 
 # _________________________________________________________________________
@@ -274,8 +265,8 @@ def reverse_path(distances, previous, start, end):
 
 
 #
-def pathfind_dj(graph, start, end, start_dir):
-    return reverse_path(*dijkstra(graph, start, end, start_dir), start, end)
+def pathfind_dj(graph, start, end, start_dir, true_goal):
+    return reverse_path(*dijstrka(graph, start, end, start_dir, true_goal), start, end)
 
 
 def pathfind_as(graph, start, end, start_dir, true_goal):

@@ -187,24 +187,29 @@ def update_cars():
                 if car.park_time > 0:
                     car.park_time -= 1
                 else:
-                    goal = pf.rand_node(trf.road_network)
-                    true_goal = rdn.choice(trf.road_network.connections[goal])[0]
-                    while goal in {
-                        car.start_nodes[0],
-                        car.start_nodes[1],
-                    } or true_goal in {
-                        car.start_nodes[0],
-                        car.start_nodes[1],
-                    }:  # The while exists to avoid a strange bug where the cars can't identify the road that it is in
+                    if car.saved_nodes == None:
                         goal = pf.rand_node(trf.road_network)
                         true_goal = rdn.choice(trf.road_network.connections[goal])[0]
-                    park_slot = pk.generate_goal(car.id, true_goal, goal)
-                    if park_slot == None:
-                        continue
-                    dist, target_pos = park_slot
+                        while goal in {
+                            car.start_nodes[0],
+                            car.start_nodes[1],
+                        } or true_goal in {
+                            car.start_nodes[0],
+                            car.start_nodes[1],
+                        }:  # The while exists to avoid a strange bug where the cars can't identify the road that it is in
+                            goal = pf.rand_node(trf.road_network)
+                            true_goal = rdn.choice(trf.road_network.connections[goal])[
+                                0
+                            ]
+                        park_slot = pk.generate_goal(car.id, true_goal, goal)
+                        if park_slot == None:
+                            continue
+                        dist, target_pos = park_slot
+                    else:
+                        goal, true_goal, dist, target_pos = car.saved_nodes
                     car.find_path(goal, true_goal, cars, dist, target_pos)
-                    if car.id < stgs.tested and car.path == None:
-                        print("Recalculated", car.id)
+                    # if car.id < stgs.tested and car.path == None:
+                    #    print("Recalculated", car.id)
 
             else:
                 car.enter_road()

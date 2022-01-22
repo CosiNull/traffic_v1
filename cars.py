@@ -38,20 +38,20 @@ class Car:
 
         self.path = None
         if self.id < stgs.tested:
-            self.park_time = 300
+            self.park_time = 0
         else:
             self.park_time = 0  # parktime
-        self.goal = 0
 
         self.pause = False
         self.waiting_intersection = False
         self.intersection_line = False
 
         self.autonomous = autonomous
-        self.func = "as"
+        self.func = "dj"
         self.c = -1
 
         self.checked = False
+        self.saved_nodes = None
 
     def set_pos(self, graph, random=True):
         if random:
@@ -116,13 +116,20 @@ class Car:
         self.gas = 0
         self.turn_state = 0
 
-    def find_path(self, goal, true_goal, cars, dist, target_pos, func="as"):
+    def find_path(self, goal, true_goal, cars, dist, target_pos, func=stgs.func):
+        self.func = func
+        my_dir = trf.entry_dir(*self.start_nodes)
+        if not trf.roads[(self.start_nodes[0], my_dir)].can_out_parking(self):
+            # RETRY OTHER TIME
+            self.saved_nodes = (goal, true_goal, dist, target_pos)
+            return
+        self.saved_nodes = None
+
         fut.reset_path(self.id)
 
-        if self.id < stgs.tested:  # HERE DUM DUM
-            func = "mlt"
-            if func == "mlt":
-                self.func = "mlt"
+        # if self.id > stgs.num_car - stgs.tested:  # HERE DUM DUM
+        #    func = stgs.func
+        #    self.func = func
 
         # Set Start Pos
         start = self.start_nodes[1]
@@ -133,7 +140,9 @@ class Car:
         exit_time = ex.predict_first_node(cars, self.id) + 1
 
         if func == "dj":
-            self.path = pf.pathfind_dj(trf.road_network, start, goal, start_dir)[0]
+            self.path = pf.pathfind_dj(
+                trf.road_network, start, goal, start_dir, true_goal
+            )[0]
         elif func == "as":
             self.path = pf.pathfind_as(
                 trf.road_network, start, goal, start_dir, true_goal
@@ -163,8 +172,11 @@ class Car:
                 self.id,
             )
             self.path = res[0]
-
             self.mypred = res[1]
+
+            self.path2 = pf.pathfind_dj(
+                trf.road_network, start, goal, start_dir, true_goal
+            )[0]
 
         else:
             raise Exception("ERROR: Bad 'func' Parameter")
@@ -197,10 +209,10 @@ class Car:
             add_dir(path_list, index + 2, direc)
 
         add_dir(self.path, 0, start_dir)
-        """
-        self.path2.append(true_goal)  #
-        add_dir(self.path2, 0, start_dir)  #
-        """
+
+        if func == "mlt":
+            self.path2.append(true_goal)  #
+            add_dir(self.path2, 0, start_dir)  #
 
         self.predict_path(cars)
 
@@ -223,6 +235,33 @@ class Car:
             self.path = None
             self.predict_path(cars, panic=True)
             print("PANIC MODE")
+            return
+
+        if self.func == "mlt" and self.path != None:
+            time_with_mlt = fut.timing_paths[self.id][-1]
+
+            fut.save_true_path(
+                self.id,
+                self.path2,
+                self.init_pos,
+                self.target_pos,
+                pf.angle_to_dir[self.angle],
+            )
+
+            panic = fut.predict_path(cars, self.id)
+
+            if time_with_mlt <= fut.timing_paths[self.id][-1] or panic:
+                print("mlt pred", self.id)
+                fut.save_true_path(
+                    self.id,
+                    self.path,
+                    self.init_pos,
+                    self.target_pos,
+                    pf.angle_to_dir[self.angle],
+                )
+                fut.predict_path(cars, self.id)
+            else:
+                self.path = self.path2
 
         # self.repredict_mlts(cars)
 
@@ -253,7 +292,6 @@ class Car:
         exit_time = fut.timing_paths[self.id][index] if exit_time == None else exit_time
         goal, true_goal = self.predicted_nodes
         start_dir = fut.dir_paths[self.id][index]
-        curr_action = self.path[0]
 
         new_path = mlt.pathfind_mlt(
             trf.road_network,
@@ -279,15 +317,14 @@ class Car:
 
         add_dir(new_path, 0, start_dir)
 
-        if not self.c < 1:
-            new_path = self.backup_path[0 : index + 1] + new_path[1:]
-
+        print(self.backup_path)
+        new_path = self.backup_path[0:index] + new_path[1:]
         last_time = fut.timing_paths[self.id][-1]
-        self.path = new_path
 
         fut.save_true_path(
-            self.id, self.path, self.init_pos, self.target_pos, start_dir
+            self.id, new_path, self.init_pos, self.target_pos, fut.dir_paths[self.id][0]
         )
+        print(new_path, index)
 
         panic = fut.predict_path(cars, self.id)
 
@@ -298,6 +335,12 @@ class Car:
             )
             print(panic)
             fut.predict_path(cars, self.id)
+        else:
+            self.path = new_path
+            self.backup_path = deepcopy(self.path)
+
+        if self.c >= 0:
+            self.path = self.path[self.c :]
 
         print("Got out")
 
@@ -414,10 +457,15 @@ class Car:
                 self.pause = True
 
                 # print(stgs.time)
+                stgs.count += 1
+                print(stgs.time)
+
+                """
                 if self.id < stgs.tested:
                     self.pause = True
                     stgs.count += 1
                     print(self.id, stgs.time - self.start_time, self.start_time)
+                """
 
     def move_to_dest(self):
         # Move Forward

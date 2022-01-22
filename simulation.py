@@ -3,6 +3,7 @@ import settings as stgs
 import pickle
 
 running = True
+print(stgs.func)
 while running:
 
     rv.pg.display.update()
@@ -15,5 +16,5 @@ while running:
         stgs.time += 1
         rv.update_cars()
 
-    if stgs.count == stgs.tested:
+    if stgs.count == stgs.num_car:
         break

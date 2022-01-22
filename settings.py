@@ -1,6 +1,8 @@
 # Files
 road_file = "test3.pickle"
-seed = 12212
+seed = 42
+func = "dj"
+
 # 75374827393
 
 # PArking error: 93438333, num_cars: 123
@@ -50,4 +52,4 @@ play_speed = 100
 car_evolution = []
 
 count = 0
-tested = 5
+tested = 3
