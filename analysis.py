@@ -1,13 +1,24 @@
 import pickle
-import numpy
+import numpy as np
 import matplotlib.pyplot as plt
 
-x1 = numpy([])
-y1 = numpy([])
+seed = 420
 
-plt.plot(x1, y1)
+with open(f"data/dj{seed}.pickle", "rb") as f:
+    x1 = np.array(pickle.load(f))
+y1 = np.arange(1, len(x1) + 1)
 
-x2 = numpy([])
-y2 = numpy([])
+plt.plot(x1, y1, label="Dijkstra")
 
-plt.plot(x2, y2)
+with open(f"data/mlt{seed}.pickle", "rb") as f:
+    x2 = np.array(pickle.load(f))
+y2 = np.arange(1, len(x2) + 1)
+
+plt.plot(x2, y2, label="Multi-agent A*")
+
+plt.title("Number of Cars Arrived Per Units of Time")
+plt.ylabel("Cars Arrived")
+plt.xlabel("Units of Time")
+plt.legend(loc="upper left")
+
+plt.show()

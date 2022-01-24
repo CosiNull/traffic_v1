@@ -37,10 +37,10 @@ class Car:
         self.park_speed = 0.4
 
         self.path = None
-        if self.id < stgs.tested:
-            self.park_time = 0
-        else:
-            self.park_time = 0  # parktime
+        # if self.id < stgs.tested:
+        #    self.park_time = 0
+        # else:
+        self.park_time = parktime  # parktime
 
         self.pause = False
         self.waiting_intersection = False
@@ -117,7 +117,7 @@ class Car:
         self.turn_state = 0
 
     def find_path(self, goal, true_goal, cars, dist, target_pos, func=stgs.func):
-        self.func = func
+        self.func = func  # HERE
         my_dir = trf.entry_dir(*self.start_nodes)
         if not trf.roads[(self.start_nodes[0], my_dir)].can_out_parking(self):
             # RETRY OTHER TIME
@@ -234,7 +234,10 @@ class Car:
             fut.reset_path(self.id)
             self.path = None
             self.predict_path(cars, panic=True)
+            print()
             print("PANIC MODE")
+            print("PLEASE RESTART PROGRAM IF POSSIBLE")
+            print()
             return
 
         if self.func == "mlt" and self.path != None:
@@ -261,6 +264,7 @@ class Car:
                 )
                 fut.predict_path(cars, self.id)
             else:
+                print("dj pred")
                 self.path = self.path2
 
         # self.repredict_mlts(cars)
@@ -454,11 +458,11 @@ class Car:
                 """
 
                 # Can out this in the future
-                self.pause = True
+                self.pause = False
 
                 # print(stgs.time)
                 stgs.count += 1
-                print(stgs.time)
+                print(stgs.count)
 
                 """
                 if self.id < stgs.tested:

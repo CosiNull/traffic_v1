@@ -4,6 +4,8 @@ import turtle
 from roads import *
 import os, sys
 import random
+import time
+
 
 p = os.path.abspath(".")
 sys.path.insert(1, p)
@@ -42,7 +44,7 @@ segments = 0
 max_segments = 225
 road_queue = []
 hotspots = []
-random.seed(2190)  # 2409
+random.seed("james")  # 2190
 
 
 # Helper Functions
@@ -250,7 +252,7 @@ def clean_graph():
 create_network()
 clean_graph()
 
-file_to_store = open("test3.pickle", "wb")
+file_to_store = open("test2.pickle", "wb")
 pickle.dump(graph, file_to_store)
 file_to_store.close()
 

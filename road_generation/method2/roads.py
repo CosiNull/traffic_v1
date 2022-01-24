@@ -1,10 +1,10 @@
 import random
 import math
 
-random.seed(121)
+random.seed(121)  # 121
 
 road_queue = []
-road_len = 52
+road_len = 52  # 52
 
 # Road Class
 class Road:

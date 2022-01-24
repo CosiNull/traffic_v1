@@ -23,7 +23,7 @@ colors = [
 ]
 #
 cars = [
-    c.Car(i, rdn.choice(colors), rdn.randint(0, 500), autonomous=False)
+    c.Car(i, rdn.choice(colors), rdn.randint(0, 700), autonomous=False)
     for i in range(stgs.num_car)
 ]  # 300
 

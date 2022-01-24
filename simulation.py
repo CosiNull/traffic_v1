@@ -16,5 +16,10 @@ while running:
         stgs.time += 1
         rv.update_cars()
 
-    if stgs.count == stgs.num_car:
+    if stgs.time > 10000:
         break
+
+
+file_to_store = open(f"data/{stgs.func}{stgs.seed}.pickle", "wb")
+pickle.dump(stgs.car_evolution, file_to_store)
+file_to_store.close()
