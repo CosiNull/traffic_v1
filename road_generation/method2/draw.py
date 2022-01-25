@@ -44,7 +44,9 @@ segments = 0
 max_segments = 225
 road_queue = []
 hotspots = []
-random.seed("james")  # 2190
+random.seed(2022)
+# 2190 => test3
+# james => test2
 
 
 # Helper Functions
@@ -252,7 +254,7 @@ def clean_graph():
 create_network()
 clean_graph()
 
-file_to_store = open("test2.pickle", "wb")
+file_to_store = open("test1.pickle", "wb")
 pickle.dump(graph, file_to_store)
 file_to_store.close()
 

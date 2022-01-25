@@ -37,10 +37,8 @@ class Car:
         self.park_speed = 0.4
 
         self.path = None
-        # if self.id < stgs.tested:
-        #    self.park_time = 0
-        # else:
-        self.park_time = parktime  # parktime
+
+        self.park_time = parktime
 
         self.pause = False
         self.waiting_intersection = False
@@ -73,7 +71,7 @@ class Car:
                 self.pos = (node[0] + variation, node[1] - start)
                 #
                 self.angle = math.pi * 3 / 2
-                # self.dead = True
+
             else:
                 self.pos = (node[0] - variation, node[1] + start)
                 #
@@ -111,7 +109,6 @@ class Car:
         if not self.state == 0:
             raise Exception("ERROR: Car cannot exit parking that it already exited")
 
-            # print(self.goal)
         self.state = 0.5
         self.gas = 0
         self.turn_state = 0
@@ -126,10 +123,6 @@ class Car:
         self.saved_nodes = None
 
         fut.reset_path(self.id)
-
-        # if self.id > stgs.num_car - stgs.tested:  # HERE DUM DUM
-        #    func = stgs.func
-        #    self.func = func
 
         # Set Start Pos
         start = self.start_nodes[1]
@@ -147,19 +140,6 @@ class Car:
             self.path = pf.pathfind_as(
                 trf.road_network, start, goal, start_dir, true_goal
             )[0]
-
-            """
-            if self.id == 0:
-                self.path2 = mlt.pathfind_mlt(
-                    trf.road_network,
-                    start,
-                    goal,
-                    start_dir,
-                    true_goal,
-                    exit_time,
-                    self.id,
-                )[0]
-            """
 
         elif func == "mlt":
             res = mlt.pathfind_mlt(
@@ -254,7 +234,7 @@ class Car:
             panic = fut.predict_path(cars, self.id)
 
             if time_with_mlt <= fut.timing_paths[self.id][-1] or panic:
-                print("mlt pred", self.id)
+                # print("mlt pred", self.id)
                 fut.save_true_path(
                     self.id,
                     self.path,
@@ -264,89 +244,8 @@ class Car:
                 )
                 fut.predict_path(cars, self.id)
             else:
-                print("dj pred")
+                # print("dj pred")
                 self.path = self.path2
-
-        # self.repredict_mlts(cars)
-
-    def repredict_mlts(self, cars):
-        for i in range(0, stgs.tested):
-            if cars[i].func == "mlt" and cars[i].path != None:
-                cars[i].refind_path(cars)
-
-    def refind_path(self, cars):
-        if self.c + 1 > len(fut.true_paths[self.id]) - 3:
-            return
-
-        exit_time = None
-        if self.c == -1:
-            index = 1
-        elif self.start_nodes[1] != self.last_intersection:
-            if type(self.path[0]) == str:
-                print("This is weird")
-            else:
-                index = self.c + 1
-        elif type(self.path[0]) == str and self.waiting_intersection:
-            index = self.c
-            exit_time = stgs.time
-        elif type(self.path[0]) == str and not self.waiting_intersection:
-            index = self.c + 2
-
-        start = fut.true_paths[self.id][index][0]
-        exit_time = fut.timing_paths[self.id][index] if exit_time == None else exit_time
-        goal, true_goal = self.predicted_nodes
-        start_dir = fut.dir_paths[self.id][index]
-
-        new_path = mlt.pathfind_mlt(
-            trf.road_network,
-            start,
-            goal,
-            start_dir,
-            true_goal,
-            exit_time,
-            self.id,
-        )[0]
-
-        new_path.append(true_goal)
-
-        def add_dir(path_list, index, abs_curr_dir):
-            if index >= len(path_list) - 1:
-                return
-            direc = pf.get_abs_direction(path_list[index], path_list[index + 1])
-
-            turn = pf.relative_dir[abs_curr_dir][direc]
-
-            path_list.insert(index + 1, (turn))
-            add_dir(path_list, index + 2, direc)
-
-        add_dir(new_path, 0, start_dir)
-
-        print(self.backup_path)
-        new_path = self.backup_path[0:index] + new_path[1:]
-        last_time = fut.timing_paths[self.id][-1]
-
-        fut.save_true_path(
-            self.id, new_path, self.init_pos, self.target_pos, fut.dir_paths[self.id][0]
-        )
-        print(new_path, index)
-
-        panic = fut.predict_path(cars, self.id)
-
-        if panic or fut.timing_paths[self.id][-1] > last_time:
-            self.path = self.backup_path
-            fut.save_true_path(
-                self.id, self.path, self.init_pos, self.target_pos, self.init_dir
-            )
-            print(panic)
-            fut.predict_path(cars, self.id)
-        else:
-            self.path = new_path
-            self.backup_path = deepcopy(self.path)
-
-        if self.c >= 0:
-            self.path = self.path[self.c :]
-
-        print("Got out")
 
     # The Holy Update Method_____________________________________________________________
     def update(self):
@@ -405,32 +304,8 @@ class Car:
                 pk.parking.delete_car(self.start_nodes, self.init_pos)
                 self.state = 2
                 self.start_time = stgs.time
-                # print(self.init_pos[self.u_s] - self.pos[self.u_s])
 
                 self.center_to_road(False)
-
-                """
-                timing = fut.timing_paths[self.id][0]
-                if timing != stgs.time:
-                    print("EXIT______________")
-                    print(self.id, self.color, fut.true_paths[self.id][1])
-                    print(timing, stgs.time)
-                    print("___________________")
-                """
-
-                """
-                # Road enter and estimations
-                ind = fut.binary_search_ds(stgs.time, fut.roads[(junc, my_dir)].enter)
-                print(fut.roads[(junc, my_dir)].enter[ind], stgs.time)
-            
-                ind = fut.binary_search_ds(
-                    stgs.time, fut.roads[(junc, my_dir)].estimation
-                )
-                print(fut.roads[(junc, my_dir)].estimation[ind], stgs.time)
-                """
-
-                # print(fut.timing_paths[0][0], stgs.time)
-                # print(fut.paths[0][0], self.pos)
 
                 if fut.timing_paths[self.id][self.c] != stgs.time:
                     fut.timing_paths[self.id][self.c] = stgs.time
@@ -444,32 +319,12 @@ class Car:
                 self.gas = 0
                 self.goal = 0
 
-                timing = fut.timing_paths[self.id][-1]
-                # if timing != stgs.time:
-                #     print(self.id, self.color, fut.true_paths[self.id][-2])
-                #     print(timing, stgs.time)
-
                 self.c = -1
-
-                """
-                # Road Exit
-                ind = fut.binary_search_ds(stgs.time, fut.roads[(junc, my_dir)].leave)
-                print(fut.roads[(junc, my_dir)].leave[ind], stgs.time)
-                """
 
                 # Can out this in the future
                 self.pause = False
 
-                # print(stgs.time)
                 stgs.count += 1
-                print(stgs.count)
-
-                """
-                if self.id < stgs.tested:
-                    self.pause = True
-                    stgs.count += 1
-                    print(self.id, stgs.time - self.start_time, self.start_time)
-                """
 
     def move_to_dest(self):
         # Move Forward
@@ -478,9 +333,7 @@ class Car:
             self.path = None
             self.state = 3
 
-            # HELLO
             stgs.car_evolution.append(stgs.time)
-            # print(len(stgs.car_evolution))
 
         elif not type(self.path[0]) == str:
             self.advance_to_dest()
@@ -538,27 +391,12 @@ class Car:
                         *self.junction_id
                     )
 
-                    """
-                    # Intersection enter
-                    junc = self.last_intersection
-                    ind = fut.binary_search_ds(
-                        stgs.time, fut.junctions[junc].entries[from_inter]
-                    )
-                    print(fut.junctions[junc].entries[from_inter][ind], stgs.time)
-                    """
                 self.c += 1
 
                 if fut.timing_paths[self.id][self.c] != stgs.time:
                     fut.timing_paths[self.id][self.c] = stgs.time
-                    print("Error cocorrection", self.id)
+                    # print("Error cocorrection", self.id)
 
-                # if self.time_pred != stgs.time and self.c == 1:
-                #    print(self.id, self.time_pred, stgs.time)
-
-                # print(fut.paths[0][self.c], self.pos)
-
-                # if self.id == 22:
-                #    print("a", fut.timing_paths[self.id], stgs.time)
             else:
                 # Remove the car from the road, it's parking time!
                 my_dir = pf.angle_to_dir[self.angle]
@@ -581,27 +419,6 @@ class Car:
 
             if not dont_move:
                 self.move_forward(self.speed)
-
-            """
-            else:
-                # Not necessary for now but it is good to keep
-                if (
-                    len(self.path) > 1
-                    and not self.waiting_intersection
-                    and current_road.cars[car_index - 1].waiting_intersection
-                ):
-
-                    self.last_intersection = self.path[
-                        0
-                    ]  # It is called last intersection even though it didnt reach it next
-                    self.waiting_intersection = True
-                    trf.junctions[self.last_intersection].add_car_entry(
-                        *self.junction_id
-                    )
-                    trf.junctions[self.last_intersection].add_car_queue(
-                        *self.junction_id
-                    )
-            """
 
     # Movement
     def move_forward(self, speed):
@@ -674,10 +491,6 @@ class Car:
             self.angle = (self.road_angle - math.pi / 2) % (math.pi * 2)
             self.road_angle = self.angle
 
-            # if self.road_angle == 0 or self.road_angle == math.pi:
-            #    print(
-            #        f"Distance: {self.pos[1]-self.save[0][1]}, Gas: {self.gas-self.save[1]}"
-            #    )
             self.exit_intersection()
 
     def wait_intersection(self):
@@ -685,36 +498,6 @@ class Car:
         start_dir = pf.angle_to_dir[self.angle]
         start_inter = trf.inverse_dir[start_dir]
         next_dir = trf.abs_dir(start_dir, self.path[0])
-
-        """
-        if not self.checked and self.c + 3 < len(fut.true_paths[self.id]):
-            self.checked = True
-            path_so_far = fut.paths[self.id][0 : self.c + 2]
-            timing = mlt.predict_time_cross(
-                self.id,
-                stgs.time,
-                self.last_intersection,
-                start_inter,
-                next_dir,
-                path_so_far,
-            )
-            real = fut.timing_paths[self.id][self.c + 2]
-            # ind = fut.linear_search(
-            #    self.id, fut.junctions[self.last_intersection].crossing_enter
-            # )
-            # real = fut.junctions[self.last_intersection].crossing_enter[ind][1]
-            if timing != real:
-                print("_" * 20)
-                print("ID", self.id)
-                print(stgs.time, timing, real)
-                print("IDEN", self.last_intersection, self.color)
-                print(junction_data.crossing)
-                # ind = fut.linear_search(
-                #    10, fut.junctions[self.last_intersection].crossing_enter
-                # )
-                # print(fut.junctions[self.last_intersection].crossing_enter[ind][1])
-                print("_" * 20)
-        """
 
         # Go check who is where
         crossable = all(
@@ -747,39 +530,6 @@ class Car:
             intersection_from = self.start_nodes[1]
             trf.roads[(intersection_from, new_dir)].add_car(self)
 
-            # Crossing_enter
-            """
-            junc = self.last_intersection
-            ind = fut.linear_search(self.id, fut.junctions[junc].crossing_enter)
-            timing = fut.junctions[junc].crossing_enter[ind][1]
-            if timing != stgs.time:
-                global yo
-                yo += 1
-                print("_______________________________")
-                print(yo, junc, self.id, self.color)
-                print(timing, stgs.time)
-            """
-
-            """"
-            # Road_exit
-            junc = self.start_nodes[0]
-            ind = fut.binary_search_ds(stgs.time, fut.roads[(junc, start_dir)].leave)
-            print(fut.roads[(junc, start_dir)].leave[ind], stgs.time)
-            """
-
-            #  Road_enter and estimation
-            """
-            junc = self.last_intersection
-
-            # ind = fut.binary_search_ds(stgs.time, fut.roads[(junc, next_dir)].enter)
-            # print(fut.roads[(junc, next_dir)].enter[ind], stgs.time)
-
-            ind = fut.binary_search_ds(
-                stgs.time, fut.roads[(junc, next_dir)].estimation
-            )
-            print(fut.roads[(junc, next_dir)].estimation[ind], stgs.time)
-            """
-
     def exit_intersection(self):
         self.turn_state = 0
         self.path.pop(0)
@@ -790,28 +540,12 @@ class Car:
             (self.junction_id[0], self.junction_id[1], self.road_to)
         )
 
-        """
-        # Crossing_exit
-        junc = self.last_intersection
-        ind = fut.binary_search_ds(stgs.time, fut.junctions[junc].crossing_exit)
-        print(fut.junctions[junc].crossing_exit[ind], stgs.time)
-        """
-
         # Crossing remove
         self.c += 1
 
         if fut.timing_paths[self.id][self.c] != stgs.time:
             fut.timing_paths[self.id][self.c] = stgs.time
-            print("Error cocorrection", self.id)
-
-        # print(
-        #     fut.timing_paths[0],
-        #     stgs.time,
-        #     fut.true_paths[self.id][self.c + 1][1],
-        # ),
-
-        # if self.id == 22:
-        #     print("i", fut.timing_paths[self.id], stgs.time)
+            # print("Error cocorrection", self.id)
 
     @property
     def points(self):

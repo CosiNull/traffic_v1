@@ -1,6 +1,6 @@
 # Files
-road_file = "test2.pickle"
-seed = 420
+road_file = "test3.pickle"
+seed = 7
 func = "dj"
 
 # 75374827393
@@ -20,8 +20,8 @@ move_speed = 4
 
 scale_factor = 1
 scale_speed = 0.025
-max_scale = 2.4
-min_scale = 0.4
+max_scale = 2.4  # 2.4
+min_scale = 0.6
 
 # Method2 Variables
 # IMPORTANT: IF YOU CHANGE THEM, ADJUST THEM IN METHOD2
@@ -46,7 +46,7 @@ road_center = 4
 time = 0
 
 car_dist = car_len + min_dist
-play_speed = 0
+play_speed = 100
 
 # car_evolution
 car_evolution = []
