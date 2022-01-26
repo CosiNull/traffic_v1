@@ -15,8 +15,8 @@ A Youtube Video is coming soon to explain my project!
 2. Once inside the project directory, (assuming that you are using a Python 3.8 environment that already has Matplotlib and numpy) run `pip install pygame`
 3. Run the simulation with `python simulation.py`
 
-```sh```
+```
 git clone https://github.com/CosiNull/traffic_v1.git
 pip install pygame
 python simulation.py
-```sh```
+```
