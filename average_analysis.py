@@ -2,11 +2,11 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-seeds = [0, 492, 999, 2015, 69696969]
+seeds = [7, 420, 2000, 6969, 9422]
 # [45, 109, 205, 308, 403, 405, 509]
 # [0, 492, 999, 2015, 69696969]
 # [7, 420, 2000, 6969, 9422]
-data = 3
+data = ""
 
 x = range(1, 10101)
 ys1 = np.empty((0, 10100))

@@ -2,7 +2,7 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-seed = 9422
+seed = 6969
 
 with open(f"data/dj{seed}.pickle", "rb") as f:
     x1 = np.array(pickle.load(f))
