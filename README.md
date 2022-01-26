@@ -31,9 +31,9 @@ The available variables to tweak are:
 - The simulation playspeed `play_speed`
 - The screen width/height `width`/`height`
 
-- The algorithm that the cars will use `func`:
-Set `func = "dj"` for the cars to use Dijkstra's algorithm
-Set `func = "as"` for the cars to use regular A*
+- The algorithm that the cars will use `func`: <br>
+Set `func = "dj"` for the cars to use Dijkstra's algorithm <br>
+Set `func = "as"` for the cars to use regular A* <br>
 Set `func = "mlt"` for the cars to use Hybrid Multi-agent A*
 
 
