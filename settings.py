@@ -1,6 +1,14 @@
+# YOU CAN CHANGE THESE SETTINGS_______________________________________________
+num_car = 300
+road_file = "test3.pickle"
+seed = 7
+func = "dj"
+play_speed = 1
+
 # Screen
 width = 1100
 height = 650
+# _____________________________________________________________________________
 
 # Object size
 node_width = 16
@@ -36,16 +44,7 @@ time = 0
 
 car_dist = car_len + min_dist
 
-
-# car_evolution
 car_evolution = []
 
 count = 0
 tested = 3
-
-# YOU CAN CHANGE THESE SETTINGS_______________________________________________
-num_car = 300
-road_file = "test3.pickle"
-seed = 7
-func = "dj"
-play_speed = 100

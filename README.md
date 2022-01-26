@@ -21,3 +21,16 @@ cd traffic-v1
 pip install pygame
 python simulation.py
 ```
+
+## Tweaking the Settings 
+You can tweak the setting of the simulation by accesing the `settings.py` file.
+The available variables to tweak are:
+- The number of cars in the simulation `num_car`
+- The path to the terrain stored in a pickle file `road_file`
+- The seed of the simulation `seed`
+- The simulation playspeed `play_speed`
+
+- The algorithm that the cars will use `func`
+
+
+
