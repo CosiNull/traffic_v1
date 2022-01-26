@@ -17,6 +17,7 @@ A Youtube Video is coming soon to explain my project!
 
 ```
 git clone https://github.com/CosiNull/traffic_v1.git
+cd traffic-v1
 pip install pygame
 python simulation.py
 ```
