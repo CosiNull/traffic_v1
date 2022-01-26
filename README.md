@@ -29,8 +29,13 @@ The available variables to tweak are:
 - The path to the terrain stored in a pickle file `road_file`
 - The seed of the simulation `seed`
 - The simulation playspeed `play_speed`
+- The screen width/height `width`/`height`
 
-- The algorithm that the cars will use `func`
+- The algorithm that the cars will use `func`:
+Set `func = "dj"` for the cars to use Dijkstra's algorithm
+Set `func = "as"` for the cars to use regular A*
+Set `func = "mlt"` for the cars to use Hybrid Multi-agent A*
+
 
 
 
