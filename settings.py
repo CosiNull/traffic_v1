@@ -35,7 +35,7 @@ road_center = 4
 time = 0
 
 car_dist = car_len + min_dist
-play_speed = 100
+
 
 # car_evolution
 car_evolution = []
@@ -48,3 +48,4 @@ num_car = 300
 road_file = "test3.pickle"
 seed = 7
 func = "dj"
+play_speed = 100
