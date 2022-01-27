@@ -1,8 +1,13 @@
 # YOU CAN CHANGE THESE SETTINGS_______________________________________________
 num_car = 300
-road_file = "test3.pickle"
-seed = 7
-func = "dj"
+road_file = "terrains/0.pickle"
+seed = 222
+
+func = "mlt"
+# dj: Dijkstra's algorithm
+# as: A* pathfinding
+# mlt: Hybrid Multi-agent pathfinding
+
 play_speed = 1
 
 # Screen

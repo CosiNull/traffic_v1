@@ -75,7 +75,7 @@ def predict_path(cars, subtime):
         ID, pos, time = queue.pop(0)
         junction, action = true_paths[ID][len(paths[ID])]
 
-        if time - stgs.time > 6000:
+        if time - stgs.time > 7000:
             return True
 
         if action == "e":
@@ -649,38 +649,6 @@ def predict_park_line(ID, preds, paths):
             binary_insertion((ID_b, preds[ID_b]), res, lambda x: x[1])
             examined_cars += 1
 
-    """
-    # Get car just before
-    extra_dist = 0
-    while abs(i) < len(road.estimation):
-        i -= 1
-        ID_b = road.estimation[i][0]
-        count_b = len(paths[ID_b])
-        if count_b == len(true_paths[ID_b]):
-            continue
-        past_junc, past_act = true_paths[ID_b][count_b - 1]
-        if ID == 171:
-            print(timing_paths[ID_b], preds[ID_b], ID_b)
-        if past_junc == road.to and past_act != "i":
-            timing_b = timing_paths[ID_b][count_b - 1] - time_turn[past_act] - 1
-            time_elapsed = preds[ID_b] - timing_b
-            extra_dist = reLu(tot_car_len - time_elapsed * stgs.car_speed)
-            if extra_dist != 0:
-                print(ID, time_elapsed, extra_dist)
-            if ID == 171:
-                print(extra_dist, time_elapsed, past_act)
-        break
-    """
-
-    """
-    to_travel = line_len + extra_dist - goal_dist
-    if extra_dist != 0 and to_travel < tot_car_len:
-        print(ID)
-        timing = timing_b + math.ceil(to_travel / stgs.car_speed)
-        timing = timing + 1 if ID < ID_b else timing
-
-    else:
-    """
     # Step 3.
     dist_to_travel = line_len - goal_dist
     cars_to_move = math.ceil(dist_to_travel / tot_car_len)
