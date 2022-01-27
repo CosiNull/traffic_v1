@@ -1,9 +1,9 @@
 # YOU CAN CHANGE THESE SETTINGS_______________________________________________
 num_car = 300
-road_file = "terrains/0.pickle"
-seed = 222
+road_file = "terrains/9.pickle"
+seed = 2
 
-func = "mlt"
+func = "dj"
 # dj: Dijkstra's algorithm
 # as: A* pathfinding
 # mlt: Hybrid Multi-agent pathfinding
@@ -25,7 +25,7 @@ move_speed = 4
 
 scale_factor = 1
 scale_speed = 0.025
-max_scale = 2.4
+max_scale = 3.6  # 2.4
 min_scale = 0.6
 
 # IMPORTANT: IF YOU CHANGE THEM, ADJUST THEM IN METHOD2
@@ -52,4 +52,3 @@ car_dist = car_len + min_dist
 car_evolution = []
 
 count = 0
-tested = 3

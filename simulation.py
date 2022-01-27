@@ -7,7 +7,7 @@ import traffic as trf
 running = True
 print(stgs.func)
 
-"""
+
 while running:
 
     rv.pg.display.update()
@@ -15,14 +15,20 @@ while running:
     rv.draw_graph()
     rv.draw_cars()
     rv.check_keys()
-"""
 
-for terrain_seed in range(10):
+    for i in range(stgs.play_speed):
+        rv.update_cars()
+        stgs.time += 1
+
+
+"""
+for terrain_seed in range(4):
     with open(f"terrains/{terrain_seed}.pickle", "rb") as f:
         trf.road_network = pickle.load(f)
     stgs.car_evolution = []
 
-    for seed in range(10):
+    for seed in range(5):
+        print("Starting:", terrain_seed, seed)
         rv.rdn.seed(seed)
         stgs.time = 0
         stgs.count = 0
@@ -38,24 +44,18 @@ for terrain_seed in range(10):
         ]
 
         while running:
-            for i in range(1):
-                stgs.time += 1
-                rv.update_cars()
+            stgs.time += 1
+            rv.update_cars()
 
-            if stgs.count >= stgs.num_car:
-                break
-            elif stgs.time >= 8000:
-                print()
-                print(f"To Exclude seed:{seed}")
-                print()
+            if stgs.time >= 10000:
                 break
 
-        print(terrain_seed, seed, stgs.time)
-        stgs.car_evolution.append(stgs.time)
+        print(terrain_seed, seed, len(stgs.car_evolution))
 
-    file_to_store = open(f"timed_test/{stgs.func}{terrain_seed}.pickle", "wb")
-    pickle.dump(stgs.car_evolution, file_to_store)
-    file_to_store.close()
+        file_to_store = open(f"evolution_{terrain_seed}/{stgs.func}{seed}.pickle", "wb")
+        pickle.dump(stgs.car_evolution, file_to_store)
+        file_to_store.close()
+"""
 
 
 print("done!")

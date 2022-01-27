@@ -27,7 +27,7 @@ cars = [
     for i in range(stgs.num_car)
 ]  # 300
 
-"""
+
 # Moving Functions
 def check_keys():
     global move_x
@@ -177,8 +177,6 @@ def draw_cars():
             points = [adjust_pos(point) for point in car.points]
             pg.draw.polygon(screen, car.color, points)
 
-"""
-
 
 def update_cars():
     for car in cars:
@@ -220,11 +218,10 @@ def update_cars():
 
 
 # Initializing pygame_________________________________________________________
-"""
+
 import pygame as pg
 
 pg.init()
 screen = pg.display.set_mode([stgs.width, stgs.height])
 pg.display.set_caption("Simulation")
 pg.event.set_allowed([pg.QUIT, pg.KEYDOWN, pg.KEYUP])
-"""
