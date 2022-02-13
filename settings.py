@@ -1,6 +1,6 @@
 # YOU CAN CHANGE THESE SETTINGS_______________________________________________
-num_car = 300
-road_file = "terrains/9.pickle"
+num_car = 275
+road_file = "test3.pickle"
 seed = 2
 
 func = "dj"

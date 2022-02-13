@@ -322,7 +322,7 @@ class Car:
                 self.c = -1
 
                 # Can out this in the future
-                self.pause = False
+                self.pause = True
 
                 stgs.count += 1
 
@@ -333,7 +333,7 @@ class Car:
             self.path = None
             self.state = 3
 
-            stgs.car_evolution.append(stgs.time)
+            # stgs.car_evolution.append(stgs.time)
 
         elif not type(self.path[0]) == str:
             self.advance_to_dest()
